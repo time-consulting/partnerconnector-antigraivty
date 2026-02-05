@@ -8,9 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { 
-  Users, 
-  Share2, 
+import {
+  Users,
+  Share2,
   Trophy,
   Zap,
   Copy,
@@ -63,6 +63,19 @@ interface InviteMetrics {
   active: number;
 }
 
+interface ProgressionData {
+  partnerLevel: string;
+  teamSize: number;
+  totalRevenue: number;
+  directRevenue: number;
+  overrideRevenue: number;
+  totalInvites: number;
+  successfulInvites: number;
+  currentXP: number;
+  xpToNextLevel: number;
+  revenueGrowthPercent: number;
+}
+
 const fadeInUp = {
   hidden: { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0 }
@@ -83,7 +96,7 @@ export default function TeamManagement() {
   const [copied, setCopied] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const queryClient = useQueryClient();
-  
+
   const typedUser = user as User | undefined;
 
   useEffect(() => {
@@ -145,7 +158,7 @@ export default function TeamManagement() {
   const shareVia = (platform: string) => {
     const message = encodeURIComponent(`Join me on PartnerConnector and start earning commissions! Use my referral link: ${referralLink}`);
     let url = '';
-    
+
     switch (platform) {
       case 'whatsapp':
         url = `https://wa.me/?text=${message}`;
@@ -160,7 +173,7 @@ export default function TeamManagement() {
         url = `https://twitter.com/intent/tweet?text=${message}`;
         break;
     }
-    
+
     if (url) window.open(url, '_blank');
   };
 
@@ -205,15 +218,15 @@ export default function TeamManagement() {
     }
   };
 
+  // Get XP and level data from backend (no more hardcoded values)
+  const currentXP = progressionData?.currentXP || 0;
   const levels = [
     { name: "Bronze", xp: 0, color: "from-amber-600 to-amber-700", earned: true },
-    { name: "Silver", xp: 500, color: "from-gray-400 to-gray-500", earned: true },
-    { name: "Gold", xp: 1500, color: "from-yellow-400 to-amber-500", earned: false },
-    { name: "Platinum", xp: 3500, color: "from-cyan-300 to-blue-400", earned: false },
-    { name: "Diamond", xp: 7500, color: "from-purple-400 to-pink-500", earned: false },
+    { name: "Silver", xp: 500, color: "from-gray-400 to-gray-500", earned: currentXP >= 500 },
+    { name: "Gold", xp: 1500, color: "from-yellow-400 to-amber-500", earned: currentXP >= 1500 },
+    { name: "Platinum", xp: 3500, color: "from-cyan-300 to-blue-400", earned: currentXP >= 3500 },
+    { name: "Diamond", xp: 7500, color: "from-purple-400 to-pink-500", earned: currentXP >= 7500 },
   ];
-
-  const currentXP = 1250;
   const currentLevel = levels.find((l, i) => levels[i + 1]?.xp > currentXP) || levels[1];
   const nextLevel = levels[levels.findIndex(l => l.name === currentLevel.name) + 1];
   const progressToNext = nextLevel ? ((currentXP - currentLevel.xp) / (nextLevel.xp - currentLevel.xp)) * 100 : 100;
@@ -232,7 +245,7 @@ export default function TeamManagement() {
   return (
     <div className="min-h-screen bg-[#0f1419]">
       <Sidebar onExpandChange={setSidebarExpanded} />
-      
+
       <div className={sidebarExpanded ? 'ml-64' : 'ml-20'}>
         <div className="p-6 lg:p-8">
           <motion.div
@@ -289,7 +302,12 @@ export default function TeamManagement() {
                     <div className="w-10 h-10 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-xl flex items-center justify-center">
                       <TrendingUp className="w-5 h-5 text-white" />
                     </div>
-                    <span className="text-xs text-cyan-400 bg-cyan-400/10 px-2 py-1 rounded-full">+12%</span>
+                    <span className="text-xs text-cyan-400 bg-cyan-400/10 px-2 py-1 rounded-full">
+                      {progressionData?.revenueGrowthPercent !== undefined
+                        ? `${progressionData.revenueGrowthPercent > 0 ? '+' : ''}${progressionData.revenueGrowthPercent}%`
+                        : '+0%'
+                      }
+                    </span>
                   </div>
                   <p className="text-gray-500 text-sm mb-1">Team Revenue</p>
                   <div className="text-3xl font-bold text-white">£{progressionData?.totalRevenue || 0}</div>
@@ -333,8 +351,8 @@ export default function TeamManagement() {
                         <code className="flex-1 text-white font-mono text-sm bg-black/20 rounded-lg px-3 py-2 truncate">
                           {referralLink}
                         </code>
-                        <Button 
-                          size="sm" 
+                        <Button
+                          size="sm"
                           onClick={() => copyToClipboard(referralLink)}
                           className={`${copied ? 'bg-green-500 hover:bg-green-600' : 'bg-white/20 hover:bg-white/30'} text-white border-0`}
                           data-testid="button-copy-link"
@@ -345,7 +363,7 @@ export default function TeamManagement() {
                     </div>
 
                     <div className="grid grid-cols-4 gap-3">
-                      <Button 
+                      <Button
                         onClick={() => shareVia('whatsapp')}
                         className="bg-green-500 hover:bg-green-600 text-white border-0 flex-col h-auto py-3"
                         data-testid="button-share-whatsapp"
@@ -353,7 +371,7 @@ export default function TeamManagement() {
                         <MessageCircle className="w-5 h-5 mb-1" />
                         <span className="text-xs">WhatsApp</span>
                       </Button>
-                      <Button 
+                      <Button
                         onClick={() => shareVia('email')}
                         className="bg-blue-500 hover:bg-blue-600 text-white border-0 flex-col h-auto py-3"
                         data-testid="button-share-email"
@@ -361,7 +379,7 @@ export default function TeamManagement() {
                         <Mail className="w-5 h-5 mb-1" />
                         <span className="text-xs">Email</span>
                       </Button>
-                      <Button 
+                      <Button
                         onClick={() => shareVia('linkedin')}
                         className="bg-[#0077b5] hover:bg-[#006699] text-white border-0 flex-col h-auto py-3"
                         data-testid="button-share-linkedin"
@@ -369,7 +387,7 @@ export default function TeamManagement() {
                         <Linkedin className="w-5 h-5 mb-1" />
                         <span className="text-xs">LinkedIn</span>
                       </Button>
-                      <Button 
+                      <Button
                         onClick={() => shareVia('twitter')}
                         className="bg-black hover:bg-gray-900 text-white border-0 flex-col h-auto py-3"
                         data-testid="button-share-twitter"
@@ -393,7 +411,7 @@ export default function TeamManagement() {
                     <p className="text-white/80 text-sm mb-4 flex-1">
                       Send a direct invitation to someone you know
                     </p>
-                    
+
                     <form onSubmit={handleInvite} className="space-y-3">
                       <Input
                         type="email"
@@ -403,8 +421,8 @@ export default function TeamManagement() {
                         className="bg-white/20 border-white/30 text-white placeholder:text-white/50 focus:border-white"
                         data-testid="input-invite-email"
                       />
-                      <Button 
-                        type="submit" 
+                      <Button
+                        type="submit"
                         className="w-full bg-white text-green-600 hover:bg-white/90"
                         disabled={inviteMutation.isPending}
                         data-testid="button-send-invite"
@@ -433,7 +451,7 @@ export default function TeamManagement() {
                   {nextLevel ? `${nextLevel.xp - currentXP} XP to ${nextLevel.name}` : 'Max Level!'}
                 </Badge>
               </div>
-              
+
               <Card className="bg-[#1a1f26] border-[#2a3441] rounded-2xl overflow-hidden">
                 <CardContent className="p-6">
                   {/* Progress Bar */}
@@ -444,7 +462,7 @@ export default function TeamManagement() {
                       <span className="text-gray-500">{nextLevel?.name || 'Max'}</span>
                     </div>
                     <div className="h-3 bg-[#2a3441] rounded-full overflow-hidden">
-                      <motion.div 
+                      <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${progressToNext}%` }}
                         transition={{ duration: 1, ease: "easeOut" }}
@@ -456,13 +474,12 @@ export default function TeamManagement() {
                   {/* Level Cards */}
                   <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                     {levels.map((level, index) => (
-                      <div 
+                      <div
                         key={level.name}
-                        className={`relative p-4 rounded-xl text-center transition-all ${
-                          currentXP >= level.xp 
-                            ? `bg-gradient-to-br ${level.color} text-white shadow-lg` 
+                        className={`relative p-4 rounded-xl text-center transition-all ${currentXP >= level.xp
+                            ? `bg-gradient-to-br ${level.color} text-white shadow-lg`
                             : 'bg-[#2a3441] text-gray-500'
-                        }`}
+                          }`}
                         data-testid={`level-${level.name.toLowerCase()}`}
                       >
                         {currentXP >= level.xp && (
@@ -489,7 +506,7 @@ export default function TeamManagement() {
                     <Gift className="w-5 h-5 text-pink-400" />
                     Commission Structure
                   </h3>
-                  
+
                   <div className="space-y-4">
                     <div className="flex items-center justify-between p-4 bg-gradient-to-r from-lime-500/10 to-green-500/10 rounded-xl border border-lime-500/20">
                       <div className="flex items-center gap-3">
@@ -541,9 +558,9 @@ export default function TeamManagement() {
                       <Users className="w-5 h-5 text-purple-400" />
                       Recent Team Members
                     </h3>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={handleRefresh}
                       className="text-gray-400 hover:text-white"
                       data-testid="button-refresh-team"
@@ -559,7 +576,7 @@ export default function TeamManagement() {
                   ) : (teamReferrals && teamReferrals.length > 0) ? (
                     <div className="space-y-3">
                       {teamReferrals.slice(0, 5).map((member: any, index: number) => (
-                        <div 
+                        <div
                           key={member.id || index}
                           className="flex items-center justify-between p-3 bg-[#2a3441] rounded-xl hover:bg-[#323d4d] transition-colors"
                           data-testid={`team-member-${index}`}
@@ -586,7 +603,7 @@ export default function TeamManagement() {
                       </div>
                       <p className="text-gray-400 mb-2">No team members yet</p>
                       <p className="text-gray-600 text-sm mb-4">Share your referral link to start building your team</p>
-                      <Button 
+                      <Button
                         onClick={() => copyToClipboard(referralLink)}
                         className="bg-purple-500 hover:bg-purple-600"
                         data-testid="button-share-empty-state"
@@ -606,7 +623,7 @@ export default function TeamManagement() {
                 <Rocket className="w-5 h-5 text-cyan-400" />
                 How Team Building Works
               </h2>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Card className="bg-gradient-to-br from-rose-500/10 to-pink-500/10 border-rose-500/20 rounded-2xl hover:scale-[1.02] transition-transform">
                   <CardContent className="p-6 text-center">
