@@ -41,12 +41,12 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import DealDetailsModal from "./deal-details-modal";
-import { 
-  getStagesForAdmin, 
-  PRODUCT_TYPES, 
+import {
+  getStagesForAdmin,
+  PRODUCT_TYPES,
   PRODUCT_CONFIG,
   type DealStage,
-  type ProductType 
+  type ProductType
 } from "@shared/dealWorkflow";
 
 const STAGE_ICONS: Record<string, any> = {
@@ -124,16 +124,26 @@ export function AdminDealsPipeline() {
       return res.json();
     },
   });
-  
+
   // Handle multiple response formats for backwards compatibility
-  const deals = Array.isArray(data) 
-    ? data 
+  const deals = Array.isArray(data)
+    ? data
     : ((data as any)?.deals || (data as any)?.referrals || []);
 
   const moveToStageMutation = useMutation({
     mutationFn: async ({ dealId, stage }: { dealId: string; stage: string }) => {
+      // Get the stage label for the log
+      const stageLabel = PIPELINE_STAGES.find(s => s.id === stage)?.label || stage;
+
+      // Create formatted timestamp: "Stage Name - HH:MM - MMM D, YYYY"
+      const now = new Date();
+      const time = format(now, "HH:mm");
+      const date = format(now, "MMM d, yyyy");
+      const logEntry = `${stageLabel} - ${time} - ${date}`;
+
       return await apiRequest("PATCH", `/api/admin/referrals/${dealId}`, {
         dealStage: stage,
+        appendProgressLog: logEntry, // This will be appended to adminNotes on backend
       });
     },
     onSuccess: () => {
@@ -216,7 +226,7 @@ export function AdminDealsPipeline() {
     setExistingPayment(null);
     setCheckingPayment(true);
     setCommissionDialogOpen(true);
-    
+
     try {
       const response = await fetch(`/api/admin/deals/${deal.id}/payment-status`, {
         credentials: 'include',
@@ -313,7 +323,7 @@ export function AdminDealsPipeline() {
           </SelectContent>
         </Select>
       </div>
-      
+
       {/* Summary Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
         <Card className="bg-card border-border">
@@ -394,7 +404,7 @@ export function AdminDealsPipeline() {
                                 <div className="flex items-center gap-2 mb-1 flex-wrap">
                                   <Building2 className="h-5 w-5 text-primary" />
                                   <h4 className="text-xl font-bold text-foreground">{deal.businessName}</h4>
-                                  <Badge 
+                                  <Badge
                                     variant="secondary"
                                     className={`
                                       ${deal.productType === 'card_payments' ? 'bg-blue-500/20 text-blue-300 border-blue-500/50' : ''}
@@ -668,8 +678,8 @@ export function AdminDealsPipeline() {
                   {PIPELINE_STAGES.map((stage) => {
                     const isCurrent = selectedDeal?.dealStage === stage.id;
                     return (
-                      <SelectItem 
-                        key={stage.id} 
+                      <SelectItem
+                        key={stage.id}
                         value={stage.id}
                         className={isCurrent ? "bg-primary/20" : ""}
                       >
@@ -697,8 +707,8 @@ export function AdminDealsPipeline() {
             )}
           </div>
           <DialogFooter>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="bg-card border-border hover:bg-secondary"
               onClick={() => setMoveDialogOpen(false)}
             >
@@ -731,13 +741,13 @@ export function AdminDealsPipeline() {
               {existingPayment ? "Commission Already Created" : "Confirm Commission"}
             </DialogTitle>
             <DialogDescription className="text-muted-foreground">
-              {existingPayment 
+              {existingPayment
                 ? `A commission payment already exists for ${selectedDeal?.businessName}`
                 : `Create a commission payment for ${selectedDeal?.businessName}`
               }
             </DialogDescription>
           </DialogHeader>
-          
+
           {checkingPayment ? (
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -811,7 +821,7 @@ export function AdminDealsPipeline() {
               </div>
             </div>
           )}
-          
+
           <DialogFooter>
             <Button
               variant="outline"

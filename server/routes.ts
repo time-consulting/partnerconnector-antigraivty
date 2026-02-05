@@ -4008,8 +4008,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       // Append audit info to admin notes
-      const adminAuditNote = `\n[${new Date().toLocaleString()}] Updated by admin ${req.user.email}`;
-      const updatedAdminNotes = (currentReferral.adminNotes || '') + adminAuditNote;
+      let updatedAdminNotes = currentReferral.adminNotes || '';
+
+      // If frontend sends a progress log entry, append it
+      if (updateData.appendProgressLog) {
+        updatedAdminNotes = updatedAdminNotes
+          ? `${updatedAdminNotes}\n${updateData.appendProgressLog}`
+          : updateData.appendProgressLog;
+      } else {
+        // Fallback to old admin audit note format
+        const adminAuditNote = `\n[${new Date().toLocaleString()}] Updated by admin ${req.user.email}`;
+        updatedAdminNotes += adminAuditNote;
+      }
 
       const deal = await storage.updateDeal(dealId, {
         ...updateData,

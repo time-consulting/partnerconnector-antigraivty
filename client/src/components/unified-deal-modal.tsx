@@ -6,16 +6,16 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { 
-  CheckCircle2, 
-  MessageSquare, 
-  TrendingUp, 
-  Send, 
-  FileText, 
-  X, 
-  User, 
-  Upload, 
-  Clock, 
+import {
+  CheckCircle2,
+  MessageSquare,
+  TrendingUp,
+  Send,
+  FileText,
+  X,
+  User,
+  Upload,
+  Clock,
   Building,
   Mail,
   Phone,
@@ -33,12 +33,12 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { format } from "date-fns";
 import AdditionalDetailsForm from "./additional-details-form";
-import { 
-  getPartnerProgressSteps, 
-  getAdminProgressSteps, 
+import {
+  getPartnerProgressSteps,
+  getAdminProgressSteps,
   mapDealToPartnerProgress,
   STAGE_CONFIG,
-  type DealStage 
+  type DealStage
 } from "@shared/dealWorkflow";
 
 type ViewMode = 'partner' | 'admin';
@@ -62,30 +62,30 @@ function ActionButtons({ deal, onActionComplete }: ActionButtonsProps) {
   const [showSignupForm, setShowSignupForm] = useState(false);
   const [rateRequestMessage, setRateRequestMessage] = useState("");
   const queryClient = useQueryClient();
-  
+
   const isAdmin = user?.isAdmin === true;
   const quoteId = deal.quoteId || deal.quote?.id;
   const quote = deal.quote || {};
   const dealStage = deal.dealStage || deal.status || 'submitted';
-  
+
   // Use dealStage as source of truth for button visibility
   const hasQuote = !!quoteId;
   const signupCompleted = !!deal.signupCompletedAt;
-  
+
   // Stages where quote has been sent but not yet approved by partner
   const isQuoteSentStage = dealStage === 'quote_sent';
-  
+
   // Stages where quote is approved but signup not yet completed
   const needsSignupStages = ['quote_approved', 'agreement_sent', 'signed_awaiting_docs', 'under_review', 'approved'];
   const needsSignup = needsSignupStages.includes(dealStage) && !signupCompleted;
-  
+
   // Stages where admin needs to send quote to client
   const needsAdminSend = hasQuote && ['submitted', 'quote_request_received'].includes(dealStage);
-  
+
   // Determine action required
   const getActionRequired = () => {
     if (!hasQuote) return null;
-    
+
     // Client: Quote sent but not approved - needs to approve
     if (!isAdmin && isQuoteSentStage) {
       return { by: 'client', type: 'approve_quote', label: 'Review & Approve Quote' };
@@ -100,9 +100,9 @@ function ActionButtons({ deal, onActionComplete }: ActionButtonsProps) {
     }
     return null;
   };
-  
+
   const actionRequired = getActionRequired();
-  
+
   // Approve Quote mutation - auto-opens signup form on success
   const approveQuoteMutation = useMutation({
     mutationFn: async () => {
@@ -118,7 +118,7 @@ function ActionButtons({ deal, onActionComplete }: ActionButtonsProps) {
       toast({ title: "Error", description: "Failed to approve quote. Please try again.", variant: "destructive" });
     }
   });
-  
+
   // Request Lower Rates mutation  
   const requestRatesMutation = useMutation({
     mutationFn: async (request: string) => {
@@ -134,7 +134,7 @@ function ActionButtons({ deal, onActionComplete }: ActionButtonsProps) {
       toast({ title: "Error", description: "Failed to send request. Please try again.", variant: "destructive" });
     }
   });
-  
+
   // Send to Client mutation (Admin only)
   const sendToClientMutation = useMutation({
     mutationFn: async () => {
@@ -150,7 +150,7 @@ function ActionButtons({ deal, onActionComplete }: ActionButtonsProps) {
       toast({ title: "Error", description: "Failed to send quote. Please try again.", variant: "destructive" });
     }
   });
-  
+
   // Send Reminder mutation (for agreement_sent stage)
   const sendReminderMutation = useMutation({
     mutationFn: async () => {
@@ -164,24 +164,24 @@ function ActionButtons({ deal, onActionComplete }: ActionButtonsProps) {
       toast({ title: "Error", description: "Failed to send reminder. Please try again.", variant: "destructive" });
     }
   });
-  
+
   const handleCompleteSignup = () => {
     setShowSignupForm(true);
   };
-  
+
   const handleSignupComplete = () => {
     setShowSignupForm(false);
     queryClient.invalidateQueries({ queryKey: ['/api/deals/with-quotes'] });
     onActionComplete();
     toast({ title: "Application Submitted", description: "Your application has been submitted to admin for processing." });
   };
-  
+
   const handleSubmitRateRequest = () => {
     if (rateRequestMessage.trim()) {
       requestRatesMutation.mutate(rateRequestMessage);
     }
   };
-  
+
   // Determine which buttons to show based on dealStage
   const showApproveQuote = !isAdmin && hasQuote && isQuoteSentStage;
   const showRequestRates = !isAdmin && hasQuote && isQuoteSentStage;
@@ -189,11 +189,11 @@ function ActionButtons({ deal, onActionComplete }: ActionButtonsProps) {
   const showSendToClient = isAdmin && needsAdminSend;
   // Show reminder button when deal is at agreement_sent stage (waiting for client to sign)
   const showSendReminder = !isAdmin && dealStage === 'agreement_sent';
-  
+
   const hasActions = showApproveQuote || showRequestRates || showCompleteSignup || showSendToClient || showSendReminder;
-  
+
   if (!hasActions && !actionRequired) return null;
-  
+
   return (
     <div className="bg-gradient-to-r from-teal-900/30 to-blue-900/30 rounded-2xl p-4 border border-teal-500/30 mb-4">
       {actionRequired && (
@@ -205,7 +205,7 @@ function ActionButtons({ deal, onActionComplete }: ActionButtonsProps) {
           </Badge>
         </div>
       )}
-      
+
       <div className="flex flex-wrap gap-3">
         {showApproveQuote && (
           <Button
@@ -218,7 +218,7 @@ function ActionButtons({ deal, onActionComplete }: ActionButtonsProps) {
             {approveQuoteMutation.isPending ? "Approving..." : "Approve & Sign Up"}
           </Button>
         )}
-        
+
         {showRequestRates && !showRateRequestForm && (
           <Button
             onClick={() => setShowRateRequestForm(true)}
@@ -230,7 +230,7 @@ function ActionButtons({ deal, onActionComplete }: ActionButtonsProps) {
             Request Lower Rates
           </Button>
         )}
-        
+
         {showCompleteSignup && (
           <Button
             onClick={handleCompleteSignup}
@@ -241,7 +241,7 @@ function ActionButtons({ deal, onActionComplete }: ActionButtonsProps) {
             Complete Application
           </Button>
         )}
-        
+
         {showSendToClient && (
           <Button
             onClick={() => sendToClientMutation.mutate()}
@@ -253,7 +253,7 @@ function ActionButtons({ deal, onActionComplete }: ActionButtonsProps) {
             {sendToClientMutation.isPending ? "Sending..." : "Send to Client"}
           </Button>
         )}
-        
+
         {showSendReminder && (
           <Button
             onClick={() => sendReminderMutation.mutate()}
@@ -267,7 +267,7 @@ function ActionButtons({ deal, onActionComplete }: ActionButtonsProps) {
           </Button>
         )}
       </div>
-      
+
       {showRateRequestForm && (
         <div className="mt-4 space-y-3">
           <Textarea
@@ -294,7 +294,7 @@ function ActionButtons({ deal, onActionComplete }: ActionButtonsProps) {
           </div>
         </div>
       )}
-      
+
       {showSignupForm && quoteId && (
         <AdditionalDetailsForm
           isOpen={showSignupForm}
@@ -366,17 +366,16 @@ function MessagingSection({ dealId }: { dealId: string }) {
         <MessageSquare className="h-5 w-5 text-teal-400" />
         Conversation
       </h3>
-      
+
       {messages.length > 0 ? (
         <div className="space-y-3 mb-4 max-h-64 overflow-y-auto">
           {messages.map((msg: any) => (
             <div
               key={msg.id}
-              className={`p-3 rounded-lg ${
-                msg.authorType === 'admin' || msg.isAdminMessage
-                  ? 'bg-teal-900/30 border border-teal-600/50' 
-                  : 'bg-[#1e3a5f]/50 border border-[#1e3a5f]'
-              }`}
+              className={`p-3 rounded-lg ${msg.authorType === 'admin' || msg.isAdminMessage
+                ? 'bg-teal-900/30 border border-teal-600/50'
+                : 'bg-[#1e3a5f]/50 border border-[#1e3a5f]'
+                }`}
             >
               <div className="flex items-start gap-2">
                 <User className="h-4 w-4 mt-0.5 text-gray-400" />
@@ -427,10 +426,10 @@ function AdminCommissionSection({ deal, onComplete }: { deal: any; onComplete: (
   const [currency, setCurrency] = useState("GBP");
   const [evidenceUrl, setEvidenceUrl] = useState("");
   const [notes, setNotes] = useState("");
-  
+
   const dealStage = deal.dealStage || deal.status || 'submitted';
   const isLiveStage = ['live', 'live_confirm_ltr'].includes(dealStage);
-  
+
   // Check if payment already exists for this deal
   const { data: paymentStatus, isLoading } = useQuery({
     queryKey: ['/api/admin/deals', deal.id, 'payment-status'],
@@ -465,10 +464,10 @@ function AdminCommissionSection({ deal, onComplete }: { deal: any; onComplete: (
       onComplete();
     },
     onError: (error: any) => {
-      toast({ 
-        title: "Error", 
-        description: error?.message || "Failed to create commission. Please try again.", 
-        variant: "destructive" 
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to create commission. Please try again.",
+        variant: "destructive"
       });
     }
   });
@@ -484,7 +483,7 @@ function AdminCommissionSection({ deal, onComplete }: { deal: any; onComplete: (
       approved: 'bg-blue-500/20 text-blue-400 border-blue-500/50',
       paid: 'bg-green-500/20 text-green-400 border-green-500/50',
     };
-    
+
     return (
       <div className="bg-gradient-to-r from-green-900/30 to-teal-900/30 rounded-2xl p-4 border border-green-500/30">
         <div className="flex items-center justify-between mb-3">
@@ -494,8 +493,8 @@ function AdminCommissionSection({ deal, onComplete }: { deal: any; onComplete: (
           </h4>
           <Badge className={statusColors[payment.paymentStatus] || 'bg-gray-500/20 text-gray-400'}>
             {payment.paymentStatus === 'needs_approval' ? 'Needs Approval' :
-             payment.paymentStatus === 'approved' ? 'Approved' :
-             payment.paymentStatus === 'paid' ? 'Paid' : payment.paymentStatus}
+              payment.paymentStatus === 'approved' ? 'Approved' :
+                payment.paymentStatus === 'paid' ? 'Paid' : payment.paymentStatus}
           </Badge>
         </div>
         <div className="grid grid-cols-2 gap-4 text-sm">
@@ -537,7 +536,7 @@ function AdminCommissionSection({ deal, onComplete }: { deal: any; onComplete: (
           Ready to Create
         </Badge>
       </div>
-      
+
       {!showForm ? (
         <Button
           onClick={() => setShowForm(true)}
@@ -574,7 +573,7 @@ function AdminCommissionSection({ deal, onComplete }: { deal: any; onComplete: (
               </select>
             </div>
           </div>
-          
+
           <div>
             <label className="text-xs text-gray-400 mb-1 block">Evidence URL (Bill/Statement Link)</label>
             <Input
@@ -584,7 +583,7 @@ function AdminCommissionSection({ deal, onComplete }: { deal: any; onComplete: (
               className="bg-[#1e3a5f]/50 border-[#1e3a5f] text-white placeholder:text-gray-500"
             />
           </div>
-          
+
           <div>
             <label className="text-xs text-gray-400 mb-1 block">Notes (Optional)</label>
             <Textarea
@@ -594,7 +593,7 @@ function AdminCommissionSection({ deal, onComplete }: { deal: any; onComplete: (
               className="bg-[#1e3a5f]/50 border-[#1e3a5f] text-white placeholder:text-gray-500 min-h-[60px]"
             />
           </div>
-          
+
           {grossAmount && parseFloat(grossAmount) > 0 && (
             <div className="bg-[#0d2137] rounded-lg p-3 border border-[#1e3a5f]">
               <p className="text-xs text-gray-400 mb-2">Commission Split Preview (60% / 20% / 10%)</p>
@@ -614,7 +613,7 @@ function AdminCommissionSection({ deal, onComplete }: { deal: any; onComplete: (
               </div>
             </div>
           )}
-          
+
           <div className="flex gap-2">
             <Button
               onClick={() => createCommissionMutation.mutate()}
@@ -726,11 +725,10 @@ function DocumentUploadSection({ dealId, businessName }: { dealId: string; busin
         onDragLeave={handleDrag}
         onDragOver={handleDrag}
         onDrop={handleDrop}
-        className={`relative border-2 border-dashed rounded-xl p-6 text-center transition-all ${
-          dragActive 
-            ? 'border-teal-500 bg-teal-900/20' 
-            : 'border-[#1e3a5f] bg-[#1e3a5f]/30 hover:border-teal-500/50'
-        }`}
+        className={`relative border-2 border-dashed rounded-xl p-6 text-center transition-all ${dragActive
+          ? 'border-teal-500 bg-teal-900/20'
+          : 'border-[#1e3a5f] bg-[#1e3a5f]/30 hover:border-teal-500/50'
+          }`}
       >
         <Upload className="h-8 w-8 text-gray-500 mx-auto mb-2" />
         <p className="text-sm text-white mb-1">Drag and drop or click to upload</p>
@@ -779,20 +777,20 @@ export default function UnifiedDealModal({ isOpen, onClose, deal, viewMode = 'pa
   const isAdminView = viewMode === 'admin';
   const currentStage = (deal.dealStage || deal.status || "submitted") as DealStage;
   const isDeclined = currentStage === 'declined';
-  
+
   const partnerProgressSteps = getPartnerProgressSteps();
   const adminProgressSteps = getAdminProgressSteps();
-  
+
   const currentPartnerProgress = mapDealToPartnerProgress(currentStage, deal.signupCompletedAt);
   const partnerStageIndex = partnerProgressSteps.findIndex(s => s.id === currentPartnerProgress.id);
   const adminStageIndex = adminProgressSteps.findIndex(s => s.id === currentStage);
-  
+
   const progressSteps = isAdminView ? adminProgressSteps : partnerProgressSteps;
   const currentProgressIndex = isAdminView ? (adminStageIndex === -1 ? 0 : adminStageIndex) : (partnerStageIndex === -1 ? 0 : partnerStageIndex);
-  const currentProgressLabel = isAdminView 
+  const currentProgressLabel = isAdminView
     ? (STAGE_CONFIG[currentStage]?.adminLabel || 'Processing')
     : currentPartnerProgress.label;
-  
+
   const hasQuote = !!deal.quoteId || !!deal.quote;
   const hasRates = deal.debitCardRate || deal.creditCardRate;
   const hasDevices = deal.devices && deal.devices.length > 0;
@@ -819,12 +817,12 @@ export default function UnifiedDealModal({ isOpen, onClose, deal, viewMode = 'pa
               <X className="h-5 w-5" />
             </Button>
           </div>
-          
+
           <div className="mt-4 bg-[#0d2137] rounded-xl p-4 border border-[#1e3a5f]">
             <div className="flex items-center justify-between mb-3">
               <span className="text-sm text-gray-400">Current Stage</span>
-              <Badge className={isDeclined 
-                ? "bg-gray-500/20 text-gray-400 border-gray-500/50" 
+              <Badge className={isDeclined
+                ? "bg-gray-500/20 text-gray-400 border-gray-500/50"
                 : "bg-teal-500/20 text-teal-400 border-teal-500/50"}>
                 {isDeclined ? 'Declined' : currentProgressLabel}
               </Badge>
@@ -835,15 +833,14 @@ export default function UnifiedDealModal({ isOpen, onClose, deal, viewMode = 'pa
                   {progressSteps.map((stage, index) => {
                     const isCompleted = index < currentProgressIndex;
                     const isCurrent = index === currentProgressIndex;
-                    
+
                     return (
                       <div key={stage.id} className="flex items-center">
-                        <div 
-                          className={`flex items-center justify-center w-8 h-8 rounded-full text-xs font-medium shrink-0 ${
-                            isCompleted ? 'bg-teal-500 text-white' :
+                        <div
+                          className={`flex items-center justify-center w-8 h-8 rounded-full text-xs font-medium shrink-0 ${isCompleted ? 'bg-teal-500 text-white' :
                             isCurrent ? 'bg-teal-500/30 text-teal-400 ring-2 ring-teal-500' :
-                            'bg-[#1e3a5f] text-gray-500'
-                          }`}
+                              'bg-[#1e3a5f] text-gray-500'
+                            }`}
                           title={stage.label}
                         >
                           {isCompleted ? <CheckCircle2 className="h-4 w-4" /> : (index + 1)}
@@ -870,13 +867,13 @@ export default function UnifiedDealModal({ isOpen, onClose, deal, viewMode = 'pa
         </DialogHeader>
 
         <div className="p-6 space-y-6 overflow-y-auto flex-1 min-h-0">
-          <ActionButtons deal={deal} onActionComplete={() => {}} />
-          
+          <ActionButtons deal={deal} onActionComplete={() => { }} />
+
           {/* Admin Commission Section - only shows at LIVE stage for admins */}
           {isAdminView && (
-            <AdminCommissionSection deal={deal} onComplete={() => {}} />
+            <AdminCommissionSection deal={deal} onComplete={() => { }} />
           )}
-          
+
           <div className="bg-[#0d2137] rounded-2xl p-6 border border-[#1e3a5f]">
             <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-white">
               <Building className="h-5 w-5 text-teal-400" />
@@ -1076,14 +1073,14 @@ export default function UnifiedDealModal({ isOpen, onClose, deal, viewMode = 'pa
             <div className="bg-amber-900/20 rounded-2xl p-6 border border-amber-600/50">
               <h4 className="font-semibold text-amber-400 mb-2 flex items-center gap-2">
                 <FileCheck className="h-5 w-5" />
-                Notes from Dojo
+                Progress Log
               </h4>
               <p className="text-gray-300 whitespace-pre-line">{deal.adminNotes}</p>
             </div>
           )}
 
           <DocumentUploadSection dealId={deal.id} businessName={deal.businessName} />
-          
+
           <MessagingSection dealId={deal.id} />
         </div>
       </DialogContent>
