@@ -4010,11 +4010,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Append audit info to admin notes
       let updatedAdminNotes = currentReferral.adminNotes || '';
 
+      // Extract appendProgressLog from updateData (it's not a DB field)
+      const { appendProgressLog, ...dealUpdateData } = updateData;
+
       // If frontend sends a progress log entry, append it
-      if (updateData.appendProgressLog) {
+      if (appendProgressLog) {
         updatedAdminNotes = updatedAdminNotes
-          ? `${updatedAdminNotes}\n${updateData.appendProgressLog}`
-          : updateData.appendProgressLog;
+          ? `${updatedAdminNotes}\n${appendProgressLog}`
+          : appendProgressLog;
       } else {
         // Fallback to old admin audit note format
         const adminAuditNote = `\n[${new Date().toLocaleString()}] Updated by admin ${req.user.email}`;
@@ -4022,7 +4025,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const deal = await storage.updateDeal(dealId, {
-        ...updateData,
+        ...dealUpdateData,
         adminNotes: updatedAdminNotes,
         updatedAt: new Date()
       });
