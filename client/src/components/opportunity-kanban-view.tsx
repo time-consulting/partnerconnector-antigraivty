@@ -5,8 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
-import { 
-  DndContext, 
+import {
+  DndContext,
   DragEndEvent,
   DragOverlay,
   DragStartEvent,
@@ -22,7 +22,7 @@ import {
   useSortable
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { 
+import {
   UserIcon,
   MailIcon,
   PhoneIcon,
@@ -38,39 +38,39 @@ import type { Opportunity } from "@shared/schema";
 
 // Opportunity Kanban columns configuration - custom lead progression stages
 const KANBAN_COLUMNS = [
-  { 
-    id: "new_contact", 
-    title: "New Contact", 
+  {
+    id: "new_contact",
+    title: "New Contact",
     count: 0,
     color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
   },
-  { 
-    id: "qualified", 
-    title: "Qualified", 
+  {
+    id: "qualified",
+    title: "Qualified",
     count: 0,
     color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
   },
-  { 
-    id: "needs_analysis", 
-    title: "Needs Analysis", 
+  {
+    id: "needs_analysis",
+    title: "Needs Analysis",
     count: 0,
     color: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
   },
-  { 
-    id: "solution_proposed", 
-    title: "Solution Proposed", 
+  {
+    id: "solution_proposed",
+    title: "Solution Proposed",
     count: 0,
     color: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200"
   },
-  { 
-    id: "submit_lead", 
-    title: "Submit Lead", 
+  {
+    id: "submit_lead",
+    title: "Submit Lead",
     count: 0,
     color: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200"
   },
-  { 
-    id: "quote_received", 
-    title: "Quote Received", 
+  {
+    id: "quote_received",
+    title: "Quote Received",
     count: 0,
     color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
   }
@@ -88,12 +88,12 @@ const getPriorityColor = (priority: string) => {
 };
 
 // Draggable Opportunity Card Component
-function OpportunityCard({ 
-  opportunity, 
+function OpportunityCard({
+  opportunity,
   onEditDetails,
   onDelete
-}: { 
-  opportunity: Opportunity; 
+}: {
+  opportunity: Opportunity;
   onEditDetails: (opportunity: Opportunity) => void;
   onDelete: (opportunityId: string) => void;
 }) {
@@ -149,11 +149,10 @@ function OpportunityCard({
       ref={setNodeRef}
       style={style}
       className={`
-        bg-gradient-to-br from-white to-slate-50 dark:from-gray-800 dark:to-gray-900 
-        rounded-xl border-0 shadow-lg hover:shadow-2xl cursor-pointer
+        rocket-card cursor-pointer
         transform transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1
         ${isDragging ? 'opacity-50 rotate-3 scale-105' : ''}
-        ${isDragging ? 'ring-2 ring-purple-400' : ''}
+        ${isDragging ? 'ring-2 ring-primary' : ''}
       `}
       data-testid={`opportunity-card-${opportunity.id}`}
       onClick={() => onEditDetails(opportunity)}
@@ -163,12 +162,12 @@ function OpportunityCard({
         <div {...attributes} {...listeners} className="space-y-4">
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
-              <h3 className="font-bold text-gray-900 dark:text-white text-base leading-tight mb-1 truncate">
+              <h3 className="font-bold text-foreground text-base leading-tight mb-1 truncate">
                 {opportunity.businessName}
               </h3>
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-500 to-purple-500"></div>
-                <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                <div className="w-2 h-2 rounded-full bg-primary"></div>
+                <span className="text-xs text-muted-foreground font-medium">
                   Active Deal
                 </span>
                 {opportunity.dealId && (
@@ -182,7 +181,7 @@ function OpportunityCard({
               </div>
             </div>
             {opportunity.priority && (
-              <Badge 
+              <Badge
                 className={`${getPriorityColor(opportunity.priority)} text-xs px-2 py-1 rounded-full font-semibold border-0 shadow-sm`}
                 variant="secondary"
               >
@@ -199,21 +198,21 @@ function OpportunityCard({
               </div>
               <span className="truncate font-medium">{getContactName()}</span>
             </div>
-            
+
             {opportunity.contactEmail && (
               <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
                 <MailIcon className="h-3 w-3 flex-shrink-0 ml-2" />
                 <span className="truncate">{opportunity.contactEmail}</span>
               </div>
             )}
-            
+
             {opportunity.contactPhone && (
               <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
                 <PhoneIcon className="h-3 w-3 flex-shrink-0 ml-2" />
                 <span>{opportunity.contactPhone}</span>
               </div>
             )}
-            
+
             {opportunity.businessType && (
               <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
                 <BuildingIcon className="h-3 w-3 flex-shrink-0 ml-2" />
@@ -263,8 +262,8 @@ function OpportunityCard({
             <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
               <CalendarIcon className="h-3 w-3" />
               <span className="font-medium">
-                {opportunity.expectedCloseDate ? 
-                  new Date(opportunity.expectedCloseDate).toLocaleDateString() : 
+                {opportunity.expectedCloseDate ?
+                  new Date(opportunity.expectedCloseDate).toLocaleDateString() :
                   'No date'
                 }
               </span>
@@ -305,7 +304,7 @@ function OpportunityCard({
               <PhoneIcon className="h-4 w-4 mr-1" />
               Call
             </Button>
-            
+
             <Button
               size="sm"
               variant="ghost"
@@ -321,7 +320,7 @@ function OpportunityCard({
               <MailIcon className="h-4 w-4 mr-1" />
               Email
             </Button>
-            
+
             <Button
               size="sm"
               variant="ghost"
@@ -336,7 +335,7 @@ function OpportunityCard({
               <FileTextIcon className="h-4 w-4 mr-1" />
               Proposal
             </Button>
-            
+
             <Button
               size="sm"
               variant="ghost"
@@ -382,44 +381,44 @@ function OpportunityCard({
 }
 
 // Kanban Column Component for Opportunities
-function OpportunityColumn({ 
-  column, 
-  opportunities, 
+function OpportunityColumn({
+  column,
+  opportunities,
   isLoading,
   onEditDetails,
   onDelete
-}: { 
-  column: typeof KANBAN_COLUMNS[0], 
-  opportunities: Opportunity[], 
+}: {
+  column: typeof KANBAN_COLUMNS[0],
+  opportunities: Opportunity[],
   isLoading: boolean,
   onEditDetails: (opportunity: Opportunity) => void,
   onDelete: (opportunityId: string) => void
 }) {
   const columnOpportunities = opportunities.filter(opportunity => opportunity.status === column.id);
-  
+
   const { setNodeRef, isOver } = useDroppable({
     id: column.id,
   });
-  
+
   // Calculate total value for the column
   const totalValue = columnOpportunities.reduce((sum, opp) => {
     const value = parseFloat(opp.estimatedValue || "0");
     return sum + (isNaN(value) ? 0 : value);
   }, 0);
-  
+
   return (
     <div className="flex-shrink-0 w-80">
-      <Card className={`h-full bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-300 ${isOver ? 'ring-2 ring-purple-500 bg-purple-50/50 dark:bg-purple-950/50 transform scale-105' : ''}`}>
+      <Card className={`h-full rocket-card ${isOver ? 'ring-2 ring-primary transform scale-105' : ''}`}>
         {/* Modern Column Header with Gradient */}
-        <CardHeader className="pb-4 bg-gradient-to-r from-slate-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-t-xl">
+        <CardHeader className="pb-4 bg-card/50 rounded-t-xl border-b border-border">
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-3 h-8 rounded-full bg-gradient-to-b from-blue-500 to-purple-600"></div>
+              <div className="w-3 h-8 rounded-full bg-primary"></div>
               <div>
-                <h3 className="font-bold text-gray-900 dark:text-white text-lg">
+                <h3 className="font-bold text-foreground text-lg">
                   {column.title}
                 </h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                <p className="text-xs text-muted-foreground font-medium">
                   {columnOpportunities.length} opportunities
                 </p>
               </div>
@@ -430,8 +429,8 @@ function OpportunityColumn({
               </Badge>
               {totalValue > 0 && (
                 <div className="text-right">
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Total Value</p>
-                  <span className="text-sm text-green-600 dark:text-green-400 font-bold">
+                  <p className="text-xs text-muted-foreground">Total Value</p>
+                  <span className="text-sm text-green-400 font-bold">
                     £{totalValue.toLocaleString()}
                   </span>
                 </div>
@@ -494,12 +493,12 @@ interface OpportunityKanbanViewProps {
   onDragEnd: (event: DragEndEvent) => void;
 }
 
-export default function OpportunityKanbanView({ 
-  opportunities, 
-  isLoading, 
-  onEditDetails, 
+export default function OpportunityKanbanView({
+  opportunities,
+  isLoading,
+  onEditDetails,
   onDelete,
-  onDragEnd 
+  onDragEnd
 }: OpportunityKanbanViewProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -523,18 +522,18 @@ export default function OpportunityKanbanView({
   const activeOpportunity = activeId ? opportunities.find(opportunity => opportunity.id === activeId) : null;
 
   return (
-    <div className="space-y-8 p-6 bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30 dark:from-gray-900 dark:via-gray-800/50 dark:to-gray-900 rounded-2xl" data-testid="opportunity-kanban-view">
+    <div className="space-y-8 p-6 bg-background rounded-2xl" data-testid="opportunity-kanban-view">
       {/* Kanban Header */}
       <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-purple-800 dark:from-white dark:via-blue-200 dark:to-purple-200 bg-clip-text text-transparent mb-2">
+        <h2 className="text-3xl font-bold text-foreground mb-2">
           Sales Pipeline
         </h2>
-        <p className="text-gray-600 dark:text-gray-400 text-lg">
+        <p className="text-muted-foreground text-lg">
           Drag opportunities between stages to update their status
         </p>
       </div>
 
-      <DndContext 
+      <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}
         onDragStart={handleDragStart}
@@ -554,7 +553,7 @@ export default function OpportunityKanbanView({
             ))}
           </div>
         </div>
-        
+
         <DragOverlay>
           {activeOpportunity ? (
             <div className="transform rotate-6 scale-105">

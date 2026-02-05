@@ -49,14 +49,14 @@ export default function AdminBackendPage() {
 
   if (!user?.isAdmin) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+      <div className="min-h-screen bg-background">
         <SideNavigation />
         <div className="lg:ml-16">
           <Navigation />
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <Card>
+            <Card className="bg-card border-border">
               <CardContent className="p-8 text-center">
-                <p className="text-red-600">Access Denied: Admin privileges required</p>
+                <p className="text-destructive font-semibold">Access Denied: Admin privileges required</p>
               </CardContent>
             </Card>
           </div>
