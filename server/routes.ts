@@ -764,10 +764,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Add impersonation status to response
+      const isImpersonating = !!(req.session.impersonatedUserId && req.session.realAdminId);
       const userWithImpersonation = {
         ...user,
-        impersonating: req.session.impersonating || false,
-        originalAdminId: req.session.originalAdminId || null
+        impersonating: isImpersonating,
+        realAdminId: req.session.realAdminId || null
       };
 
       res.json(userWithImpersonation);
@@ -3144,6 +3145,141 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error searching users:", error);
       res.status(500).json({ message: "Failed to search users" });
+    }
+  });
+
+  // Admin analytics endpoint
+  app.get('/api/admin/analytics', requireAuth, requireAdmin, async (req: any, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      const allDeals = await storage.getAllDeals();
+
+      // Total users
+      const totalUsers = users.length;
+
+      // Users with team members (have downline)
+      const usersWithTeam = users.filter((u: any) =>
+        users.some((other: any) => other.parentPartnerId === u.id)
+      ).length;
+
+      // Users with extended network (have downline with downline)
+      const usersWithExtendedNetwork = users.filter((u: any) => {
+        const directDownline = users.filter((other: any) => other.parentPartnerId === u.id);
+        return directDownline.some((downline: any) =>
+          users.some((grandchild: any) => grandchild.parentPartnerId === downline.id)
+        );
+      }).length;
+
+      // Total invites sent (count of users who have a parent)
+      const invitesSent = users.filter((u: any) => u.parentPartnerId).length;
+
+      // Deal sources - group by user
+      const dealsByUser = allDeals.reduce((acc: any, deal: any) => {
+        const userId = deal.userId || deal.submittedBy;
+        if (!acc[userId]) {
+          acc[userId] = 0;
+        }
+        acc[userId]++;
+        return acc;
+      }, {});
+
+      const topDealSources = Object.entries(dealsByUser)
+        .map(([userId, count]: [string, any]) => {
+          const user = users.find((u: any) => u.id === userId);
+          return {
+            userId,
+            userName: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : 'Unknown',
+            dealCount: count
+          };
+        })
+        .sort((a, b) => b.dealCount - a.dealCount)
+        .slice(0, 10);
+
+      // Time to first submission
+      const usersWithDeals = users.filter((u: any) =>
+        allDeals.some((d: any) => (d.userId || d.submittedBy) === u.id)
+      );
+
+      const timeToFirstSubmissions = usersWithDeals
+        .map((u: any) => {
+          const userDeals = allDeals.filter((d: any) => (d.userId || d.submittedBy) === u.id);
+          if (userDeals.length === 0) return null;
+
+          const firstDeal = userDeals.reduce((earliest: any, deal: any) => {
+            const dealDate = new Date(deal.submittedAt || deal.createdAt);
+            const earliestDate = new Date(earliest.submittedAt || earliest.createdAt);
+            return dealDate < earliestDate ? deal : earliest;
+          });
+
+          const userCreated = new Date(u.createdAt);
+          const firstDealDate = new Date(firstDeal.submittedAt || firstDeal.createdAt);
+          const daysDiff = Math.floor((firstDealDate.getTime() - userCreated.getTime()) / (1000 * 60 * 60 * 24));
+
+          return daysDiff >= 0 ? daysDiff : null;
+        })
+        .filter((days: any) => days !== null);
+
+      const avgTimeToFirstSubmission = timeToFirstSubmissions.length > 0
+        ? Math.round(timeToFirstSubmissions.reduce((sum: number, days: number) => sum + days, 0) / timeToFirstSubmissions.length)
+        : 0;
+
+      // Time to first payment (deals with actualCommission > 0)
+      const paidDeals = allDeals.filter((d: any) =>
+        d.actualCommission && parseFloat(d.actualCommission) > 0
+      );
+
+      const timeToFirstPayments = users
+        .map((u: any) => {
+          const userPaidDeals = paidDeals.filter((d: any) => (d.userId || d.submittedBy) === u.id);
+          if (userPaidDeals.length === 0) return null;
+
+          const firstPaidDeal = userPaidDeals.reduce((earliest: any, deal: any) => {
+            const dealDate = new Date(deal.submittedAt || deal.createdAt);
+            const earliestDate = new Date(earliest.submittedAt || earliest.createdAt);
+            return dealDate < earliestDate ? deal : earliest;
+          });
+
+          const userCreated = new Date(u.createdAt);
+          const firstPaymentDate = new Date(firstPaidDeal.submittedAt || firstPaidDeal.createdAt);
+          const daysDiff = Math.floor((firstPaymentDate.getTime() - userCreated.getTime()) / (1000 * 60 * 60 * 24));
+
+          return daysDiff >= 0 ? daysDiff : null;
+        })
+        .filter((days: any) => days !== null);
+
+      const avgTimeToFirstPayment = timeToFirstPayments.length > 0
+        ? Math.round(timeToFirstPayments.reduce((sum: number, days: number) => sum + days, 0) / timeToFirstPayments.length)
+        : 0;
+
+      // Network growth stats
+      const usersWithParent = users.filter((u: any) => u.parentPartnerId);
+      const networkGrowthRate = totalUsers > 0
+        ? Math.round((usersWithParent.length / totalUsers) * 100)
+        : 0;
+
+      // Active users (submitted at least one deal)
+      const activeUsers = usersWithDeals.length;
+      const activationRate = totalUsers > 0
+        ? Math.round((activeUsers / totalUsers) * 100)
+        : 0;
+
+      res.json({
+        totalUsers,
+        invitesSent,
+        usersWithTeam,
+        usersWithExtendedNetwork,
+        topDealSources,
+        avgTimeToFirstSubmission,
+        avgTimeToFirstPayment,
+        networkGrowthRate,
+        activeUsers,
+        activationRate,
+        totalDeals: allDeals.length,
+        paidDeals: paidDeals.length
+      });
+    } catch (error) {
+      console.error("Error fetching analytics:", error);
+      res.status(500).json({ message: "Failed to fetch analytics" });
     }
   });
 

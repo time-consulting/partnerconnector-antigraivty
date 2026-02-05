@@ -10,6 +10,7 @@ import ErrorBoundary from "@/components/error-boundary";
 import Landing from "@/pages/landing";
 import Dashboard from "@/pages/dashboard";
 import LoginPage from "@/pages/login";
+import ImpersonationBanner from "@/components/impersonation-banner";
 
 const SubmitDeal = lazy(() => import("@/pages/submit-deal"));
 const UploadBills = lazy(() => import("@/pages/upload-bills"));
@@ -103,9 +104,9 @@ function AppRoutes() {
       <Route path="/help-center" component={HelpCenter} />
       <Route path="/partner-recruitment" component={PartnerRecruitment} />
       <Route path="/book-demo" component={BookDemo} />
-      
+
       <Route path="/dashboard" component={() => <PrivateRoute><Dashboard /></PrivateRoute>} />
-      
+
       <Route path="/opportunities" component={() => <PrivateRoute><Opportunities /></PrivateRoute>} />
       <Route path="/contacts" component={() => <PrivateRoute><Contacts /></PrivateRoute>} />
       <Route path="/submit-deal" component={() => <PrivateRoute><SubmitDeal /></PrivateRoute>} />
@@ -125,9 +126,9 @@ function AppRoutes() {
       <Route path="/admin/messages" component={() => <PrivateRoute><AdminMessages /></PrivateRoute>} />
       <Route path="/admin/backend" component={() => <PrivateRoute><AdminBackend /></PrivateRoute>} />
       <Route path="/integrations" component={() => <PrivateRoute><Integrations /></PrivateRoute>} />
-      
+
       <Route path="/" component={Landing} />
-      
+
       <Route component={NotFound} />
     </Switch>
   );
@@ -135,11 +136,11 @@ function AppRoutes() {
 
 function AuthGate({ children }: { children: React.ReactNode }) {
   const { isLoading } = useAuthContext();
-  
+
   if (isLoading) {
     return <LoadingFallback />;
   }
-  
+
   return <>{children}</>;
 }
 
@@ -149,6 +150,7 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <Router>
+            <ImpersonationBanner />
             <ConnectionStatusNotifier />
             <AuthGate>
               <Suspense fallback={<LoadingFallback />}>

@@ -17,6 +17,7 @@ import {
   DollarSign,
   Eye,
   Network,
+  UserPlus,
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -65,7 +66,7 @@ export default function AdminBackendPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       <SideNavigation />
       <div className="lg:ml-16">
         <Navigation />
@@ -81,7 +82,7 @@ export default function AdminBackendPage() {
               <ArrowLeft className="h-4 w-4" />
               Back to Admin Dashboard
             </Button>
-            <h1 className="text-3xl font-bold text-gray-900" data-testid="page-title-admin-backend">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent" data-testid="page-title-admin-backend">
               Backend Management
             </h1>
             <p className="text-gray-600 mt-2">
@@ -128,32 +129,7 @@ export default function AdminBackendPage() {
             </TabsContent>
 
             <TabsContent value="analytics">
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Platform Analytics</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Card>
-                    <CardContent className="p-6 text-center">
-                      <BarChart3 className="h-8 w-8 mx-auto mb-2 text-blue-600" />
-                      <p className="text-2xl font-bold">{allUsers.length}</p>
-                      <p className="text-sm text-gray-600">Total Users</p>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="p-6 text-center">
-                      <FileText className="h-8 w-8 mx-auto mb-2 text-green-600" />
-                      <p className="text-2xl font-bold">{notificationCounts.submissions}</p>
-                      <p className="text-sm text-gray-600">Pending Quotes</p>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="p-6 text-center">
-                      <DollarSign className="h-8 w-8 mx-auto mb-2 text-yellow-600" />
-                      <p className="text-2xl font-bold">{notificationCounts.completedDeals}</p>
-                      <p className="text-sm text-gray-600">Completed Deals</p>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
+              <AnalyticsTab />
             </TabsContent>
 
             <TabsContent value="settings">
@@ -424,5 +400,210 @@ function UserDetailView({ userId }: { userId: string }) {
         )}
       </TabsContent>
     </Tabs>
+  );
+}
+
+function AnalyticsTab() {
+  const { data: analytics, isLoading } = useQuery({
+    queryKey: ['/api/admin/analytics'],
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading analytics...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!analytics) {
+    return (
+      <div className="text-center py-12 text-red-600">
+        Failed to load analytics data
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold mb-4">User Growth & Network Metrics</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-blue-700 font-medium">Total Users</p>
+                  <p className="text-3xl font-bold text-blue-900 mt-1">{analytics.totalUsers}</p>
+                </div>
+                <Users className="h-10 w-10 text-blue-600 opacity-75" />
+              </div>
+              <div className="mt-3 flex items-center text-sm">
+                <span className="text-blue-700">{analytics.activeUsers} active ({analytics.activationRate}%)</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-green-700 font-medium">Invites Sent</p>
+                  <p className="text-3xl font-bold text-green-900 mt-1">{analytics.invitesSent}</p>
+                </div>
+                <UserPlus className="h-10 w-10 text-green-600 opacity-75" />
+              </div>
+              <div className="mt-3 flex items-center text-sm">
+                <span className="text-green-700">{analytics.networkGrowthRate}% via network</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-purple-700 font-medium">Users with Team</p>
+                  <p className="text-3xl font-bold text-purple-900 mt-1">{analytics.usersWithTeam}</p>
+                </div>
+                <Target className="h-10 w-10 text-purple-600 opacity-75" />
+              </div>
+              <div className="mt-3 flex items-center text-sm">
+                <span className="text-purple-700">
+                  {analytics.totalUsers > 0 ? Math.round((analytics.usersWithTeam / analytics.totalUsers) * 100) : 0}% of users
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-orange-700 font-medium">Extended Network</p>
+                  <p className="text-3xl font-bold text-orange-900 mt-1">{analytics.usersWithExtendedNetwork}</p>
+                </div>
+                <Network className="h-10 w-10 text-orange-600 opacity-75" />
+              </div>
+              <div className="mt-3 flex items-center text-sm">
+                <span className="text-orange-700">Multi-level growth</span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      <div>
+        <h3 className="text-lg font-semibold mb-4">Deal Performance</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm text-gray-600 font-medium">Total Deals</p>
+                <FileText className="h-6 w-6 text-gray-500" />
+              </div>
+              <p className="text-2xl font-bold">{analytics.totalDeals}</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm text-gray-600 font-medium">Paid Deals</p>
+                <DollarSign className="h-6 w-6 text-green-600" />
+              </div>
+              <p className="text-2xl font-bold text-green-600">{analytics.paidDeals}</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm text-gray-600 font-medium">Conversion Rate</p>
+                <TrendingUp className="h-6 w-6 text-blue-600" />
+              </div>
+              <p className="text-2xl font-bold text-blue-600">
+                {analytics.totalDeals > 0 ? Math.round((analytics.paidDeals / analytics.totalDeals) * 100) : 0}%
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      <div>
+        <h3 className="text-lg font-semibold mb-4">Time to Value Metrics</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-3 bg-blue-100 rounded-lg">
+                  <FileText className="h-6 w-6 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Avg. Time to First Submission</p>
+                  <p className="text-3xl font-bold text-gray-900">{analytics.avgTimeToFirstSubmission}</p>
+                  <p className="text-sm text-gray-500">days</p>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500">
+                How quickly users submit their first deal after joining
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-3 bg-green-100 rounded-lg">
+                  <DollarSign className="h-6 w-6 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Avg. Time to First Payment</p>
+                  <p className="text-3xl font-bold text-gray-900">{analytics.avgTimeToFirstPayment}</p>
+                  <p className="text-sm text-gray-500">days</p>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500">
+                How quickly users earn their first commission
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      <div>
+        <h3 className="text-lg font-semibold mb-4">Top Deal Sources</h3>
+        <Card>
+          <CardContent className="p-6">
+            {analytics.topDealSources && analytics.topDealSources.length > 0 ? (
+              <div className="space-y-3">
+                {analytics.topDealSources.map((source: any, index: number) => (
+                  <div key={source.userId} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-bold text-sm">
+                        {index + 1}
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">{source.userName}</p>
+                        <p className="text-xs text-gray-500">{source.userId}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-gray-900">{source.dealCount}</p>
+                      <p className="text-xs text-gray-500">deals</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-center text-gray-500 py-8">No deal data available</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 }
