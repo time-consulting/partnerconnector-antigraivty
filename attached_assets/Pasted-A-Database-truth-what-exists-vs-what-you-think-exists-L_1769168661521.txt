@@ -1,0 +1,79 @@
+A) Database truth (what exists vs what you think exists)
+
+List every table and every column (include types + constraints + indexes).
+
+Show all foreign keys and relationships (actual FK constraints, not “implied”).
+
+Identify the current canonical identifiers:
+
+What is the primary key for deals? dealId? referralId? prId?
+
+What does messaging reference today? quoteId? referralId?
+
+Find any duplicate identity fields (e.g., dealId AND referralId AND prId) and where each is used.
+
+B) Ownership + permissions (multi-tenant correctness)
+
+What field represents tenancy? accountId / orgId / userId?
+
+Confirm every read/write endpoint includes an authorization filter like:
+
+WHERE account_id = current_user.account_id
+
+Flag any endpoints that query by ID without tenancy scoping (security hole + data leakage risk).
+
+C) Messaging architecture (your blocker)
+
+Locate the logic that prevents users from messaging until quote exists.
+
+Which file(s)? Which condition? What’s the exact check?
+
+Propose a refactor so messaging keys off deal_id (or thread_id) from day one.
+
+Add/confirm migration steps:
+
+create threads table OR add deal_id to messages
+
+backfill old messages from quote_id → deal_id via join on quotes table
+
+add indexes (deal_id, thread_id, account_id, created_at)
+
+D) Data lifecycle (deal → quote → payout)
+
+Document the state machine:
+
+allowed deal statuses
+
+allowed quote statuses
+
+what transitions trigger notifications
+
+Confirm there is one source of truth for status (don’t have deal status in 3 places).
+
+E) Codebase cleanup (why it feels like “a mess”)
+
+Find any code paths still using referralId instead of deal_id.
+
+Identify “write paths” for deal creation (how many places create deals? consolidate).
+
+Add a thin service layer:
+
+createDeal()
+
+createOrGetThreadForDeal()
+
+createQuoteForDeal()
+
+postMessage(thread_id/deal_id, ...)
+
+F) Safety net (so you stop breaking things)
+
+Add tests for:
+
+“user can only see their own account deals”
+
+“messaging works immediately after deal creation”
+
+“quote creation doesn’t change thread access”
+
+Add a seed script and a dev DB reset so local testing is consistent.

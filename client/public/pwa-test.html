@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PWA Test - PartnerConnector</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status { 
+            padding: 5px 10px;
+            border-radius: 4px;
+            display: inline-block;
+            font-weight: bold;
+        }
+        .pass { background: #d4edda; color: #155724; }
+        .fail { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        h1 { color: #14B8A6; }
+    </style>
+</head>
+<body>
+    <h1>🚀 PWA Configuration Test</h1>
+    
+    <div class="test-card">
+        <h2>Service Worker Status</h2>
+        <p id="sw-status">Checking...</p>
+    </div>
+
+    <div class="test-card">
+        <h2>Manifest Status</h2>
+        <p id="manifest-status">Checking...</p>
+    </div>
+
+    <div class="test-card">
+        <h2>Install Capability</h2>
+        <p id="install-status">Checking...</p>
+    </div>
+
+    <div class="test-card">
+        <h2>Offline Support</h2>
+        <p id="offline-status">Checking...</p>
+    </div>
+
+    <div class="test-card">
+        <h2>Cache Status</h2>
+        <p id="cache-status">Checking...</p>
+    </div>
+
+    <script>
+        // Test Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/service-worker.js')
+                .then(reg => {
+                    document.getElementById('sw-status').innerHTML = 
+                        '<span class="status pass">✓ Service Worker registered</span>';
+                    
+                    // Check cache
+                    caches.open('partner-connector-v1').then(cache => {
+                        cache.keys().then(requests => {
+                            document.getElementById('cache-status').innerHTML = 
+                                `<span class="status info">Cache has ${requests.length} items</span>`;
+                        });
+                    });
+                })
+                .catch(err => {
+                    document.getElementById('sw-status').innerHTML = 
+                        '<span class="status fail">✗ Service Worker failed: ' + err.message + '</span>';
+                });
+        } else {
+            document.getElementById('sw-status').innerHTML = 
+                '<span class="status fail">✗ Service Worker not supported</span>';
+        }
+
+        // Test Manifest
+        fetch('/manifest.json')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('manifest-status').innerHTML = 
+                    `<span class="status pass">✓ Manifest loaded: ${data.name}</span>`;
+            })
+            .catch(err => {
+                document.getElementById('manifest-status').innerHTML = 
+                    '<span class="status fail">✗ Manifest failed to load</span>';
+            });
+
+        // Test Install Capability
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('install-status').innerHTML = 
+                '<span class="status pass">✓ App is installable</span> <button onclick="installApp()">Install Now</button>';
+        });
+
+        function installApp() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('User accepted the install prompt');
+                    }
+                    deferredPrompt = null;
+                });
+            }
+        }
+
+        // Check if already installed
+        if (window.matchMedia('(display-mode: standalone)').matches) {
+            document.getElementById('install-status').innerHTML = 
+                '<span class="status pass">✓ App is already installed</span>';
+        } else {
+            setTimeout(() => {
+                if (document.getElementById('install-status').innerText === 'Checking...') {
+                    document.getElementById('install-status').innerHTML = 
+                        '<span class="status info">ℹ App not installable (dev mode or already prompted)</span>';
+                }
+            }, 2000);
+        }
+
+        // Test Offline Support
+        if (navigator.onLine) {
+            document.getElementById('offline-status').innerHTML = 
+                '<span class="status info">ℹ Currently online</span> <button onclick="testOffline()">Test Offline Mode</button>';
+        } else {
+            document.getElementById('offline-status').innerHTML = 
+                '<span class="status pass">✓ Offline mode active</span>';
+        }
+
+        function testOffline() {
+            window.location.href = '/offline';
+        }
+    </script>
+</body>
+</html>

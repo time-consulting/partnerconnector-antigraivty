@@ -1,0 +1,134 @@
+Submit New Lead (3 quick steps)
+
+Stepper: ① Client → ② Services → ③ Files & Consent
+Progress ring shows % complete; “Save draft” always visible.
+
+Step 1 — Client
+
+Fields (with helper text):
+
+Business name (auto-lookup on blur)
+
+Contact name
+
+Email (validates; warns if seen before)
+
+Phone
+
+Website (optional)
+
+Monthly card volume (slider + input)
+
+Funding amount (optional)
+
+Side panel (sticky): Earnings Preview
+
+“Est. commission: £{{calc}}”
+
+“Hit Silver: 2 more Won deals this month”
+
+CTA: “Continue”
+Micro-trust: “We’ll auto-check duplicates to keep your pipeline clean.”
+
+Step 2 — Services
+
+Toggles (cards): Card Payments, Business Funding
+
+If Payments: ask acquirer, current fees (optional), switch timeline
+
+If Funding: purpose, term preference (chips), urgency
+
+Inline explainer link: “How commission is calculated” (modal, 3 bullets)
+
+CTA: “Continue”
+
+Step 3 — Files & Consent
+
+Upload latest bill (drag & drop, 10 MB; shows parsing success tick)
+
+Notes (optional)
+
+Consent checkbox: “I have client permission to share details for quotes.”
+
+Referral code (pre-filled and locked)
+
+Primary CTA: “Submit referral”
+On submit: confetti burst + toast: “Nice! You’re 1 referral closer to Silver.”
+
+Success screen:
+
+Big tick ✓ “Referral submitted”
+
+Summary card (key fields) + “View in pipeline”
+
+One-more CTA: “Add another in 30 seconds” (opens prefilled skeleton)
+
+Share link: “Invite a colleague — earn override on their wins” (+5 XP)
+
+Persistent right rail (both flows)
+
+Earnings Preview
+
+Est. commission for this referral
+
+“Next milestone: Silver (5 Won this month). You’re at 3/5.”
+
+“Deals to next cash bonus: 2”
+
+Your streak
+
+“Submission streak: 4 days 🔥 Keep it going for a bonus +25 XP tomorrow.”
+
+Fast tips (carousel):
+
+“Attach a bill to boost win rate by 22%.”
+
+“Add notes for faster underwriting.”
+
+Gamification (light & meaningful)
+
+XP: +10 for a clean submission, +15 with bill, +5 for first update each day.
+
+Badges: First Flight (1st referral), Closer (first Won), Silver (5 Won / month), Power Week (7-day streak).
+
+Streaks: Daily XP booster if you submit/update each day.
+
+Progress meter: “2 deals to Silver” (always visible in right rail).
+
+Weekly challenge: “Submit 3 funding leads this week → +50 XP.”
+
+Leaderboard (tab in menu): Top earners this month (opt-in visibility).
+
+Micro-copy (ready to paste)
+
+Search placeholder: “Type a business, contact, email, or phone”
+
+Duplicate hint: “We’ve seen this email before on Acme Ltd.”
+
+File helper: “PDF, PNG, or JPG. Max 10 MB. Clear photo works too.”
+
+Consent text: “Confirm you have client permission to share details for quotes.”
+
+Success toast: “Submitted! Tracking in your pipeline.”
+
+One-more prompt: “You’re on a roll — add one more?”
+
+Visual style notes (fits your menu vibe)
+
+Large, rounded cards (2xl), soft shadow, subtle hover lift.
+
+Stepper with clear number chips and short labels.
+
+Primary CTAs full-width on mobile; right-rail collapses into a bottom sheet.
+
+Use status pills (neutral → success shades) for instant scanability.
+
+Data & guardrails
+
+Validate email/phone live; show precise, friendly errors.
+
+On blur of Business name, run a silent duplicate check; offer “Use existing / New anyway”.
+
+Autosave draft every 5 seconds.
+
+If network error on submit: keep user on page, show retry + save draft.

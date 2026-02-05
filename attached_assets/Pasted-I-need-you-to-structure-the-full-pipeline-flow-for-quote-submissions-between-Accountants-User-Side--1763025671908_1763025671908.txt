@@ -1,0 +1,177 @@
+I need you to structure the full pipeline flow for quote submissions between Accountants (User Side) and Admin (My Side). Build the data model, routes, UI screens, and explain what should happen at each stage. Here is the exact flow:
+
+🟦 USER SIDE (ACCOUNTANT PORTAL)
+1. “Submit Quote” Page
+
+Accountant fills in:
+
+Business Name
+
+Contact Name
+
+Phone
+
+Email
+
+Product Needed (Card Payments, Booking System, Funding, Marketing)
+
+Notes / File Upload
+
+Button:
+
+Submit Quote
+
+When clicked:
+
+Creates a new record in DB with status = "quote_request"
+
+Visible in Admin Portal under Quote Requests
+
+Visible in User Portal under Submitted Quotes
+
+2. “Quotes Received” Page
+
+This page shows quotes after admin creates them.
+
+Each quote card shows:
+
+Quote Reference
+
+Status
+
+PDF / Price / Details
+
+Admin Notes
+
+Buttons (for accountant):
+
+Approve Quote
+
+Send to Client (optional)
+
+Reject Quote
+
+Status changes:
+
+Approve Quote → status "approved_waiting_client"
+
+Send to Client → status "sent_to_client"
+
+Reject Quote → status "rejected"
+
+3. “Approved – Awaiting Client” Page
+
+Shows quotes accountant approved but client has not yet confirmed.
+
+Fields:
+
+Client name
+
+Client email
+
+Status
+
+Signed? Yes/No
+
+4. “Completed” Page
+
+When the client signs or confirms, admin marks as completed.
+
+Shows:
+
+Final price
+
+Commission
+
+Status “Completed”
+
+Download documents
+
+🟩 ADMIN SIDE (MY PORTAL)
+1. “Quote Requests” Page
+
+This shows quotes accountants submitted.
+
+Each card includes:
+
+Business Name
+
+Product
+
+Notes
+
+Accountant name
+
+Date submitted
+
+Buttons:
+
+Create Quote
+
+Decline
+
+Create Quote opens a form:
+
+Pricing fields
+
+PDF upload
+
+Notes
+
+Estimated timeline
+
+When Create Quote is submitted:
+
+Status changes to "quote_sent"
+
+Visible in User portal under “Quotes Received”
+
+2. “Quote Sent” Page
+
+Shows quotes where admin has already sent a quote.
+
+Each card shows:
+
+Quote sent time
+
+Pricing
+
+Accountant actions
+
+Statuses change automatically when:
+
+Accountant approves → set "approved_waiting_client"
+
+Accountant rejects → set "rejected"
+
+3. “Approved” Page
+
+Admin sees quotes accountants approved.
+
+Buttons (admin):
+
+Send contract to client
+
+Mark as Completed
+
+When the client confirms/signs:
+
+Admin presses Mark as Completed
+
+Status becomes "completed"
+
+Accountant sees it moved to Completed
+
+4. “Completed Deals” Page
+
+Shows all finished deals.
+
+Fields:
+
+Final amount
+
+Accountant commission
+
+Timeline
+
+Documents

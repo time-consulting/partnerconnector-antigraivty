@@ -1,0 +1,87 @@
+We need to debug and fix why commission/payments are not appearing and why the Payments UI is missing deal data.
+
+Problem:
+- I cannot see the “Confirm LTR / Create Commission” button in the admin deal flow (LIVE stage).
+- When deals reach LIVE, they are not populating into the Payments tab/queue.
+- Payments tab layout/data is wrong: rows/cards don’t show key deal fields (business name, product, referrer, stage), so it looks disconnected from the pipeline.
+
+Goal (MVP):
+- When an admin moves a deal to LIVE (or LIVE_CONFIRM_LTR), the admin can click a button to create a commission record.
+- Once commission is created, the deal/payment MUST appear in Payments tab as “Needs Approval”.
+- Payments tab must display correct deal info pulled from the same deals table/pipeline (business name, productType, referrer, stage).
+- Then payment can be approved + manually marked paid with audit trail.
+
+========================
+PHASE 1 — VERIFY WHY BUTTON IS MISSING (NO CHANGES YET)
+========================
+1) Identify where the “Confirm LTR / Create Commission” button is rendered:
+- File name + component
+- Exact condition that decides visibility (dealStage list, isAdmin, viewMode, productType, existing payment, etc.)
+
+2) Print/log the values for a deal where I expect the button:
+- deal.id
+- deal.dealStage
+- deal.productType
+- user.isAdmin
+- viewMode (partner/admin)
+- whether a payment record already exists for this deal
+Show what condition fails.
+
+3) Confirm LIVE stage values:
+- What exact string is used for live stages in DB? (live vs live_confirm_ltr vs delivered_pending_live etc)
+- Confirm the UI condition matches the DB values (no mismatched strings).
+
+========================
+PHASE 2 — VERIFY WHY PAYMENTS TAB IS EMPTY / DISCONNECTED
+========================
+4) Identify the Payments tab page and its API calls:
+- Which endpoint does it call?
+- Does that endpoint return any payment records?
+- Does it join deal data (business name, referrer, productType)?
+
+5) Confirm Payment record creation exists:
+- What endpoint/function creates payment records?
+- Is it being called from the funnel button?
+- Is it writing to the database successfully?
+Provide DB insert path + fields written (dealId, grossAmount, status).
+
+6) Ensure correct queue logic:
+Payments tab should show payments where status IN ('needs_approval','approved') by default.
+Confirm the query is using correct status values.
+
+========================
+PHASE 3 — FIX: CONNECT FUNNEL -> PAYMENTS PROPERLY
+========================
+7) Implement/repair commission creation from LIVE stages:
+- Button visible when dealStage IN ('live','live_confirm_ltr') in ADMIN viewMode
+- On click, open modal to enter gross commission amount (+ optional evidence)
+- Create/Upsert payment record:
+  payment.dealId = deal.id
+  payment.status = 'needs_approval'
+  payment.grossAmount = entered amount
+  payment.createdBy = req.user.id
+  payment.createdAt = now()
+- Calculate upline splits and store split rows (existing logic)
+
+8) After creation, Payments tab must show it immediately:
+- Either refetch payments list or use optimistic update
+- The deal should appear with “Needs Approval”.
+
+========================
+PHASE 4 — FIX: PAYMENTS TAB DATA + DESIGN
+========================
+9) Ensure Payments list pulls deal info:
+- Join payments -> deals -> users (referrer) so each payment row shows:
+  - business name (from deals table)
+  - productType
+  - referrer name/email
+  - dealStage
+  - gross commission amount
+  - payment status
+If business name is stored under a different field, map it.
+
+10) Align design/layout:
+- Use a consistent card/table layout matching the deal pipeline list.
+- No empty placeholders; if deal fields are missing, show “Unknown” but fix the join.
+
+======

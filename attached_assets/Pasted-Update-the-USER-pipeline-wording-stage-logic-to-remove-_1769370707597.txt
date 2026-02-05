@@ -1,0 +1,68 @@
+Update the USER pipeline wording + stage logic to remove confusion around “Approved”.
+
+Decision:
+- “Approved” must ONLY mean Dojo approved (terminals dispatched / before live).
+- The user stage after quote is accepted + signup completed should be named “Application Submitted”.
+- Deal should only show “Application Submitted” AFTER the user completes the signup application form.
+
+A) USER TAB NAMES (IN ORDER)
+1) All Deals
+2) Submitted
+3) Quote Received
+4) Application Submitted
+5) In Progress
+6) Approved (Dojo Approved)
+7) Live
+8) Complete
+9) Declined
+
+B) TAB -> CANONICAL FILTER MAPPING (BASED ON deals.dealStage + signupCompletedAt)
+Submitted =
+  dealStage in ['submitted','quote_request_received']
+
+Quote Received =
+  dealStage in ['quote_sent']
+
+Application Submitted =
+  signupCompletedAt IS NOT NULL
+  AND dealStage in ['signup_submitted','agreement_sent','signed_awaiting_docs','under_review']
+  (or whichever stages represent post-signup, pre-Dojo approval)
+
+In Progress =
+  dealStage in ['agreement_sent','signed_awaiting_docs','under_review']
+  (exclude Dojo approved + later)
+
+Approved (Dojo Approved) =
+  dealStage in ['approved','approved_dispatching','delivered_pending_live']
+  Label to user: "Approved (Terminals on the way)"
+
+Live =
+  dealStage in ['live','live_confirm_ltr']
+
+Complete =
+  dealStage in ['invoice_received','completed','commission_posted','paid_out'] (use the ones that exist)
+
+Declined =
+  dealStage in ['declined']
+
+IMPORTANT BEHAVIOUR:
+- After user completes signup application, set:
+  signupCompletedAt = now()
+  dealStage = 'signup_submitted'
+- Do NOT show “Application Submitted” unless signupCompletedAt is set.
+- Do NOT call anything “Approved” until Dojo approval stage.
+
+C) UI CLEANUP
+- Remove any user UI label "Approved – Sign Up"
+- Ensure there is no duplicate "Approved" meaning across tabs.
+- Ensure pipeline renders from a single config (dealWorkflow.ts or userWorkflow.ts) with no hardcoded arrays in components.
+
+D) SECURITY
+- Confirm user endpoints always scope deals by referrer_id server-side.
+- Confirm messaging endpoints enforce ownership.
+
+Deliverables:
+- files changed
+- updated user tab labels + mapping table
+- confirmation that complete-signup sets dealStage='signup_submitted'
+- screenshot or console proof that user pipeline shows the new tabs in order

@@ -1,0 +1,68 @@
+We have two critical issues:
+
+ISSUE 1: Normal users can see admin-only pipeline tabs/stages.
+ISSUE 2: The main user dashboard is showing ALL deals submitted (not scoped to the logged-in user).
+
+We must verify and fix with evidence.
+
+========================
+PHASE 1 — VERIFY (NO CHANGES YET)
+========================
+1) Confirm role detection:
+- Where is user role stored? (e.g. user.isAdmin, role, permissions)
+- Which function determines admin vs user in frontend and backend?
+Return file locations and example user object.
+
+2) Verify which pipeline config is being used for user vs admin:
+- Identify the UI component rendering the stage tabs for normal users.
+- Show whether it imports ADMIN tabs or a generic stage list.
+- Confirm if /admin routes/components are accidentally used in user pages.
+
+3) Verify backend scoping:
+- Identify the endpoint used by the main user dashboard to fetch deals.
+- Show the storage query for that endpoint.
+- Confirm whether it filters deals by referrer_id = current user id (server-side).
+- If the dashboard uses an admin endpoint by mistake (e.g. /api/admin/referrals), identify where.
+
+Provide proof:
+- The exact route called from the user dashboard (network call + code reference)
+- The SQL/ORM query used for that route.
+
+========================
+PHASE 2 — FIX USER VISIBILITY (ROLE-GATED PIPELINE)
+========================
+4) Implement role-gated stage tabs:
+- Normal user pages must use PARTNER_TABS only (simplified).
+- Admin tabs must only appear under /admin pages.
+- Stage tabs must be generated from a single workflow config file (dealWorkflow.ts) that exports:
+  - getTabsForRole(role): returns ADMIN_TABS or PARTNER_TABS
+
+5) Ensure normal users cannot access admin UI routes:
+- Confirm frontend routing: /admin routes are protected.
+- Confirm backend routing: /api/admin/* endpoints require admin auth.
+Return the middleware used and where it is applied.
+
+========================
+PHASE 3 — FIX USER DASHBOARD SCOPING
+========================
+6) Ensure user dashboard uses a user-scoped endpoint:
+- User dashboard must call GET /api/deals/with-quotes (or /api/deals) which is always scoped by referrer_id server-side.
+- Admin endpoints (GET /api/admin/referrals) must never be used by normal users.
+
+7) Enforce server-side scoping regardless of UI:
+- In user endpoints, do NOT accept referrerId query param.
+- Always scope with the authenticated userId from session/JWT:
+  WHERE deals.referrer_id = req.user.id
+
+8) Add a security regression test:
+- Log in as user A, attempt to fetch user B’s deal by ID or by query param -> must return 403/404.
+- Attempt to call /api/admin/* as normal user -> must return 403.
+
+========================
+DELIVERABLES
+========================
+- Files changed
+- Proof screenshots/log output showing:
+  a) normal user sees only partner tabs
+  b) admin sees admin tabs only in /admin
+  c) user dashboa

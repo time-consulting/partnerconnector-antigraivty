@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grant Admin Access - PartnerConnector</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 500px;
+            width: 100%;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .step {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+        .step-number {
+            color: #667eea;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+            transition: transform 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .loading {
+            text-align: center;
+            color: #666;
+            margin-top: 20px;
+        }
+        .link {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔑 Grant Admin Access</h1>
+        <div class="subtitle">PartnerConnector Admin Setup Tool</div>
+        
+        <div class="step">
+            <span class="step-number">Step 1:</span>
+            First, make sure you're logged in at 
+            <a href="https://www.partnerconnector.co.uk/login" target="_blank" class="link">
+                www.partnerconnector.co.uk/login
+            </a>
+            with your Google account (d.skeats@googlemail.com)
+        </div>
+        
+        <div class="step">
+            <span class="step-number">Step 2:</span>
+            Click the button below to grant yourself admin access
+        </div>
+        
+        <div class="step">
+            <span class="step-number">Step 3:</span>
+            Once successful, you can access the admin portal at 
+            <a href="https://www.partnerconnector.co.uk/admin" target="_blank" class="link">
+                www.partnerconnector.co.uk/admin
+            </a>
+        </div>
+        
+        <button id="grantAccessBtn" onclick="grantAdminAccess()">
+            Grant Admin Access to d.skeats@googlemail.com
+        </button>
+        
+        <div id="loading" class="loading" style="display: none;">
+            ⏳ Processing request...
+        </div>
+        
+        <div id="result" class="result"></div>
+    </div>
+    
+    <script>
+        async function grantAdminAccess() {
+            const button = document.getElementById('grantAccessBtn');
+            const result = document.getElementById('result');
+            const loading = document.getElementById('loading');
+            
+            button.disabled = true;
+            loading.style.display = 'block';
+            result.style.display = 'none';
+            
+            try {
+                const response = await fetch('https://www.partnerconnector.co.uk/api/admin/initialize-production-admin', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        secretKey: 'your-secret-key-2024',
+                        email: 'd.skeats@googlemail.com'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                loading.style.display = 'none';
+                result.style.display = 'block';
+                
+                if (response.ok) {
+                    result.className = 'result success';
+                    result.innerHTML = `
+                        <strong>✅ Success!</strong><br>
+                        ${data.message || 'Admin access granted'}<br><br>
+                        You can now access the admin portal at:<br>
+                        <a href="https://www.partnerconnector.co.uk/admin" target="_blank" class="link">
+                            www.partnerconnector.co.uk/admin
+                        </a>
+                    `;
+                } else if (response.status === 404) {
+                    result.className = 'result info';
+                    result.innerHTML = `
+                        <strong>⚠️ User Not Found</strong><br>
+                        ${data.message}<br><br>
+                        Please make sure you're logged in first at:<br>
+                        <a href="https://www.partnerconnector.co.uk/login" target="_blank" class="link">
+                            www.partnerconnector.co.uk/login
+                        </a><br><br>
+                        Then try again.
+                    `;
+                    button.disabled = false;
+                } else {
+                    result.className = 'result error';
+                    result.innerHTML = `
+                        <strong>❌ Error</strong><br>
+                        ${data.message || 'Failed to grant admin access'}<br><br>
+                        Please check that you're logged in and try again.
+                    `;
+                    button.disabled = false;
+                }
+            } catch (error) {
+                loading.style.display = 'none';
+                result.style.display = 'block';
+                result.className = 'result error';
+                result.innerHTML = `
+                    <strong>❌ Connection Error</strong><br>
+                    Could not connect to the server.<br>
+                    Error: ${error.message}<br><br>
+                    This might be a CORS issue. Try Method 2 below.
+                `;
+                button.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

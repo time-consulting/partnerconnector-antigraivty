@@ -1,0 +1,121 @@
+A) “Show me around” (pop-up pill tour)
+
+Format: small pill bottom-left; 1 line + “Next / Skip”.
+Timing: only on first login; ~5 pills; < 30s total.
+
+Welcome pill
+“Welcome! 20-second tour of your new hub.” → Next
+
+Dashboard
+“Your pipeline at a glance. Update deals fast.” → Next
+
+Add Referral
+“Submit a new lead in under a minute.” → Next
+
+Earnings
+“Track commissions + tiers. Silver is 5 wins/month.” → Next
+
+Invite & Overrides
+“Invite teammates—earn up to 3 levels down.” → Finish
+
+Dismiss rule: If skipped, show a tiny “Help → Quick tour” link in the header.
+
+B) Quick setup (60-second essentials)
+
+UI: single card, 2 columns desktop / stacked on mobile.
+Copy: short hints; everything save-on-blur. A single Save & continue.
+
+Fields (minimal, useful):
+
+First name (required)
+Hint: “For payouts & updates.”
+
+Last name (required)
+
+Phone (required)
+Hint: “We’ll text status updates.”
+
+Company name (optional)
+Checkbox: “No company yet”
+
+Role (chips): Accountant • Consultant • Advisor • Other
+
+Country (dropdown) – defaults from IP
+
+(Auto-filled & hidden): Email from auth
+
+After submit (toast):
+“Nice—profile set! +25 XP”
+
+Defer the heavy stuff:
+Show a slim banner: “Add payout details to get paid faster.” → “Add now” / “Later”
+
+C) Early invite nudge (3-level earning)
+
+Goal: plant the seed immediately, keep it light.
+
+Banner (after profile save):
+Title: “Earn more with your team”
+Line: “Invite partners and earn overrides up to 3 levels.”
+CTAs: Invite now • Copy link
+Fine print link: “How 3-level earnings work”
+
+Tap-through explainer (10s max):
+
+“You earn on your deals.”
+
+“You also earn a % of theirs.”
+
+“And a smaller % of their recruits.”
+CTA: Get my invite link
+
+Share modal (pre-filled):
+“Hey! I’m using PartnerConnector to share client leads for payments/funding. Join my team—earn commissions, and we both benefit. Sign up here: {invite_link}”
+
+Gamification nudges:
+
+Toast after first invite: “Invite sent! +10 XP”
+
+Right-rail card: “2 invites = Starter badge (+20 XP)”
+
+Microcopy pack (paste-ready)
+
+Tour skip: “Skip tour”
+
+Save button: “Save & continue”
+
+Phone hint: “We’ll text status updates.”
+
+Company checkbox: “No company yet”
+
+Payout banner: “Add payout details to get paid faster.”
+
+Invite banner: “Invite partners—earn 3 levels down.”
+
+Copy link btn: “Copy link” (toast: “Copied!”)
+
+Explainer link: “How 3-level earnings work”
+
+UX guardrails
+
+Keep each pill under 9 words.
+
+Never exceed 6 fields on the setup card.
+
+Everything is optional except First name, Last name, Phone.
+
+Always offer Later on anything money/KYC.
+
+Autosave on blur; show small “Saved ✓”.
+
+Show progress ring only if it helps (e.g., “Profile 80%”).
+
+Instrumentation (what to track)
+
+tour_started, tour_completed
+
+profile_submitted (fields completeness score)
+
+invite_banner_viewed, invite_link_copied, invite_sent
+
+Time-to-first-referral (T1R)

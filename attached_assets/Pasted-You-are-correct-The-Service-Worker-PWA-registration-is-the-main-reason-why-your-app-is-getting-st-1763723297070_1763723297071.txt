@@ -1,0 +1,135 @@
+You are correct. The Service Worker (PWA) registration is the main reason why your app is getting stuck in cache, especially in Incognito or the Replit preview window. It's designed to cache files aggressively, which overrides the development process.
+
+To completely remove the entire notification/PWA system (Service Worker, Push Notifications) and resolve your hot reloading issues, you need to follow these steps.
+
+1. Client-Side Cleanup (PWA / Caching Fix)
+This stops the service worker from interfering with development.
+
+A. Files to Delete
+Remove these files completely as they implement and register the PWA/Service Worker functionality:
+
+client/public/service-worker.js
+
+client/src/serviceWorkerRegistration.ts
+
+client/src/lib/push-notifications.ts
+
+client/src/components/push-notification-prompt.tsx
+
+B. Edit client/index.html
+Remove all PWA-related meta tags, link tags, and the unnecessary manual versioning from the script tag.
+
+Replace the entire contents of client/index.html with this cleaned-up version:
+
+HTML
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Fira+Code:wght@300..700&family=Geist+Mono:wght@100..900&family=Geist:wght@100..900&family=IBM+Plex+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Lora:ital,wght@0,400..700;1,400..700&family=Merriweather:ital,opsz,wght@0,18..144,300..900;1,18..144,300..900&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Outfit:wght@100..900&family=Oxanium:wght@200..800&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&family=Roboto:ital,wght@0,100..900;1,100..900&family=Source+Code+Pro:ital,wght@0,200..900;1,200..900&family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&family=Space+Grotesk:wght@300..700&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+    
+    <title>PartnerConnector</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    
+    <script type="module" src="/src/main.tsx"></script> 
+    
+    <script type="text/javascript" src="https://replit.com/public/js/replit-dev-banner.js"></script>
+  </body>
+</html>
+C. Remove Service Worker Calls
+In your client entry file (likely client/src/main.tsx), you need to find and remove the lines that import and register the Service Worker:
+
+TypeScript
+
+// IN client/src/main.tsx (or similar file)
+// DELETE these lines:
+
+import * as serviceWorkerRegistration from './serviceWorkerRegistration'; 
+// ...
+serviceWorkerRegistration.register(); 
+2. Server-Side Cleanup
+This removes the dependency causing the VAPID key warning and the logic that would handle push notifications.
+
+A. File to Delete
+server/push-notifications.ts
+
+B. Edit package.json
+Remove the dependency related to web push notifications and run a cleanup command (like npm install or pnpm install) after.
+
+In package.json, remove this line from the dependencies section:
+
+JSON
+
+// in package.json
+"dependencies": {
+    // ...
+    "vaul": "^1.1.2",
+    "web-push": "^3.6.7",  <-- REMOVE THIS LINE
+    "winston": "^3.17.0",
+    // ...
+}
+3. Performance Fix (Recommended)
+Even without the Service Worker, you still have the slowdown on full page reloads because of repeated file disk reads. Apply the fix from the previous step to optimize server/vite.ts.
+
+Replace the entire setupVite function in server/vite.ts with this corrected version:
+
+TypeScript
+
+// server/vite.ts
+
+// ... (existing imports, keep them all)
+
+export async function setupVite(app: Express, server: Server) {
+  const serverOptions = {
+    middlewareMode: true,
+    hmr: { server },
+    allowedHosts: true as const,
+  };
+
+  const vite = await createViteServer({
+    ...viteConfig,
+    configFile: false,
+    customLogger: {
+      ...viteLogger,
+      error: (msg, options) => {
+        viteLogger.error(msg, options);
+      },
+    },
+    server: serverOptions,
+    appType: "custom",
+  });
+  
+  // FIX: Determine path and read template ONCE on server startup
+  const clientTemplatePath = path.resolve(
+    import.meta.dirname,
+    "..",
+    "client",
+    "index.html",
+  );
+  
+  let template = await fs.promises.readFile(clientTemplatePath, "utf-8"); // READ ONCE
+
+
+  app.use(vite.middlewares);
+  app.use("*", async (req, res, next) => {
+    const url = req.originalUrl;
+
+    try {
+      // FIX: Use the cached template content here
+      const page = await vite.transformIndexHtml(url, template);
+      res.status(200).set({ "Content-Type": "text/html" }).end(page);
+    } catch (e) {
+      vite.ssrFixStacktrace(e as Error);
+      next(e);
+    }
+  });
+}
+
+// ... (rest of the file remains the same)

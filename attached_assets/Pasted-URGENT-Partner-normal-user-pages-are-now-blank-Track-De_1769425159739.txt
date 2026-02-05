@@ -1,0 +1,48 @@
+URGENT: Partner/normal user pages are now blank (Track Deals + user pipeline), but admin pages still work.
+
+We need a focused debug to find the exact crash and fix it.
+
+PHASE 1 — REPRO + CAPTURE PROOF
+1) Reproduce as a normal user:
+- Open /track-deals (and any other partner pipeline route)
+- Confirm it renders blank.
+
+2) Capture and paste:
+- Browser Console errors (full stack trace)
+- Network tab: failed requests on page load (status codes + URLs)
+- Server logs during the request (auth/session errors, API errors)
+
+PHASE 2 — ISOLATE ROOT CAUSE
+3) Identify exactly what component is crashing for partner view:
+- Is it track-deals.tsx rendering error?
+- Is it UnifiedDealModal / ProgressTracker / a shared layout error?
+- Is it a missing field on partner data that admin data has?
+
+4) Check for role/viewMode changes introduced recently:
+- Any code that expects admin-only fields in partner pages
+- Any condition using user.isAdmin or viewMode that might now be undefined
+- Any imports changed in Payments styling that affect shared components (nav/sidebar/routes)
+
+PHASE 3 — VERIFY PARTNER API DATA SHAPE
+5) Verify partner endpoint returns valid data:
+- Call GET /api/deals/with-quotes as the normal user
+- Confirm response is 200 and contains expected fields (dealStage, businessName/tradingName, productType, quote, signupCompletedAt)
+- If 401/403 -> auth/session issue
+- If 500 -> server query issue
+
+PHASE 4 — FIX (MINIMAL)
+6) Fix the exact file/line causing the blank screen.
+Common quick fixes:
+- Add null guards for missing deal fields in partner view
+- Fix broken import/export that only partner route uses
+- Ensure partner routes do not import admin-only components
+- Restore correct router mapping to partner pages
+
+PHASE 5 — SAFETY
+7) Add an ErrorBoundary around partner routes so future errors show a visible error panel instead of a blank screen.
+
+DELIVERABLES
+- The exact console error + file/line number
+- Files changed
+- Confirmation that partner pages render again (Track Deals + user pipeline)
+- Then we can safely return to Payments styling

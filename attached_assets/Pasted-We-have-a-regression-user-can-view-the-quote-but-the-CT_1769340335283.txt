@@ -1,0 +1,40 @@
+We have a regression: user can view the quote but the CTA buttons (Approve Quote + Complete Sign Up form) no longer render. Previously we also had "Send to client" and "Request lower rates" buttons.
+
+Do NOT guess. Trace the exact UI logic.
+
+1) Find the Quote View component(s) where buttons should appear.
+   - Identify the conditional logic controlling each CTA render.
+   - Log/print the values used in conditions:
+     deal.deal_stage, deal.status, quote.status, quote.approved_at, quote.sent_at, user role (admin/client), and any flags.
+
+2) Identify what changed after card/ID logic updates:
+   - Is the quote object shape different (missing fields)?
+   - Is the stage value different (e.g., moved into quote stages)?
+   - Is the role check failing (client vs admin)?
+   - Are we querying the wrong deal/quote relationship?
+
+3) Restore the CTA behaviour with a clear contract:
+   Client CTAs:
+     - Approve Quote (available when quote is sent and not yet approved)
+     - Request lower rates (available when quote is sent and not yet approved)
+     - Complete sign-up (available after client approves quote OR after agreement sent, depending on our rule)
+   Admin CTAs:
+     - Send to client (available when quote exists and not yet sent)
+     - Mark agreement sent / request docs / mark live etc.
+
+4) IMPORTANT: Do not use deal_stage solely for menu filtering. Implement:
+   - action_required_by: 'client' | 'admin' | 'none'
+   - action_required_type: e.g. 'approve_quote' | 'submit_signup' | 'upload_docs'
+   Update this whenever stage changes or key actions happen.
+
+5) Update the sidebar/menu:
+   - "Quotes requiring action" should be a FILTER:
+     action_required_by='client' AND action_required_type in ('approve_quote','submit_signup')
+   Not a stage.
+
+6) Add regression checklist:
+   - Quote sent -> client sees Approve + Request lower rates
+   - Client approves -> client sees Sign-up form CTA
+   - Client submits sign-up -> admin sees docs/next-step CTA
+   - Admin marks live -> client sees live confirmation
+Return: files changed + exact condition rules.

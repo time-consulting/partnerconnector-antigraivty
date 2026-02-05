@@ -1,0 +1,56 @@
+We confirmed there is ONE canonical pipeline using deals.dealStage. Now we need to:
+
+1) Standardize stages across all UIs
+2) Remove/merge the Quotes page into Track Deals
+3) Add PRODUCT filtering so the same pipeline works for multiple products (card payments, funding, bookings, websites, AI marketing)
+
+PHASE 1 — Stage Standardization (no product changes yet)
+A) Create shared/dealWorkflow.ts as the single source of truth:
+- canonical stage list (DEAL_STAGES)
+- label mapping for Admin vs Partner (same underlying stage values)
+- allowed transitions
+- CTA availability per role per stage
+
+B) Refactor all UIs to use shared/dealWorkflow.ts:
+- admin-deals-pipeline.tsx
+- track-deals.tsx
+- quotes.tsx (remove legacy fallback deal.dealStage || deal.customerJourneyStatus)
+No UI should use custom stage arrays anymore.
+
+C) Quotes page cleanup:
+- Remove quotes.tsx route + nav OR convert it to a filter tab inside Track Deals:
+  "Quotes" = deals where quote exists.
+No duplicate logic.
+
+PHASE 2 — Product Filtering (multi-product support)
+D) Confirm/implement deals.productType (enum) with values:
+- card_payments
+- business_funding
+- bookings
+- websites
+- ai_marketing
+(Keep existing if already present; if named differently, map it.)
+
+E) Update APIs to accept product filter:
+- GET /api/deals/with-quotes?productType=card_payments
+- Admin endpoint too: /api/admin/referrals?productType=...
+Ensure filtering happens in storage query.
+
+F) Update UI to add product filter controls:
+- Admin pipeline: product tabs or dropdown
+- Partner track deals: product filter + saved views
+Default view = all products.
+
+PHASE 3 — Product-specific stage mapping (only if needed)
+G) If funding/bookings require different steps, do NOT create a new pipeline.
+Instead define product workflows in shared/dealWorkflow.ts as:
+- base stages + optional product overrides
+Example: funding may skip quote stages.
+Implement mapping rules so deals.dealStage remains consistent or uses per-product stage list without breaking the app.
+
+Deliverables:
+- shared/dealWorkflow.ts
+- unified stage usage across UIs
+- Quotes page removed or merged into Track Deals as a filter
+- productType filtering working in API + UI
+- regression checklist for card payments + funding.

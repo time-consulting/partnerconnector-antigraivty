@@ -1,0 +1,91 @@
+Copy and paste this entire prompt to whoever is working on your code or use it yourself exactly as written:
+
+---
+
+I need you to fix a Vite HMR websocket reload loop issue in my Replit project. The homepage is constantly reloading because Vite is trying to connect its HMR websocket to port 5000 on the public domain, which Replit does not allow. Replit only accepts websocket upgrades on port 443, so the HMR connection fails and Vite falls back to full page reloads every few seconds.
+
+The fix must be done in the file:
+
+```
+server/vite.ts
+```
+
+Step by step:
+
+1. Open `server/vite.ts`
+
+2. Find the HMR configuration that looks similar to this:
+
+```ts
+hmr: {
+  server,
+  clientPort: internalPort,
+  protocol: 'wss',
+},
+```
+
+or anything where `clientPort` is set to `internalPort`, `5000`, or any number.
+
+3. Completely remove `clientPort` from the HMR configuration.
+
+4. Replace the entire HMR block with this Replit-safe configuration:
+
+```ts
+const replitHost = process.env.REPL_SLUG && process.env.REPL_OWNER
+  ? `${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
+  : undefined;
+
+hmr: {
+  server,
+  host: replitHost,
+  clientPort: 443,
+  protocol: 'wss',
+},
+```
+
+5. Make sure there is no other HMR configuration anywhere else in the file that still uses:
+
+* `clientPort: 5000`
+* `clientPort: internalPort`
+* `localhost`
+* Any hardcoded port
+
+6. Save the file.
+
+7. Stop the running Replit server completely.
+
+8. Start the server again from scratch.
+
+9. Do a hard refresh in your browser:
+
+* Windows: Ctrl + Shift + R
+* Mac: Cmd + Shift + R
+
+10. Open your app in a new browser tab instead of the Replit Preview iframe.
+
+Expected result:
+
+* The websocket will now connect to:
+
+  ```
+  wss://your-repl-domain.replit.dev
+  ```
+
+  on port 443
+* No more websocket errors
+* No more fallback reloads
+* No more flickering
+* No more homepage refresh loop
+* Vite HMR will work normally
+
+Important technical reason:
+
+Replit maps:
+
+```
+Public HTTPS/WSS (443) → Internal app port (5000)
+```
+
+So specifying `:5000` on the public domain breaks websocket upgrades. Removing or correcting the `clientPort` fixes the entire problem.
+
+This is an infrastructure-level fix, not a React or routing issue.

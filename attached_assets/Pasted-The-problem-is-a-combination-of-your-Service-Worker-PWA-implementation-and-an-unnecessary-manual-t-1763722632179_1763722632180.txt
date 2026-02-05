@@ -1,0 +1,134 @@
+The problem is a combination of your Service Worker (PWA) implementation and an unnecessary manual tweak to your main script tag.
+
+Here is a breakdown of the issues and the recommended fixes, in order of priority:
+
+1. Major Issue: Service Worker Caching in Development (The "Stuck in Cache" Problem)
+Your app has an active Service Worker (PWA support), which is designed to serve cached assets (like /index.html) immediately for offline use. When you are in development mode, the Service Worker intercepts all requests, and even a hard refresh will often pull the old, cached index.html and assets, preventing the new code from loading.
+
+Files Affected: client/public/service-worker.js, client/src/serviceWorkerRegistration.ts
+
+✅ Solution: Unregister Service Worker in Development
+The standard approach is to ensure the Service Worker is never registered in development mode, or is immediately unregistered if found.
+
+Replace the entire content of your client/src/serviceWorkerRegistration.ts file with the following code. This explicitly checks the environment and aggressively unregisters the Service Worker on non-production builds, which is crucial for development environments like Replit.
+
+TypeScript
+
+// client/src/serviceWorkerRegistration.ts
+
+// NOTE: This file has been edited to ensure Service Worker (PWA) is disabled
+// in development mode to prevent caching conflicts with Vite HMR.
+
+const isLocalhost = Boolean(
+  window.location.hostname === 'localhost' ||
+  window.location.hostname === '[::1]' ||
+  window.location.hostname.match(
+    /^127(?:\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$/
+  )
+);
+
+type Config = {
+  onSuccess?: (registration: ServiceWorkerRegistration) => void;
+  onUpdate?: (registration: ServiceWorkerRegistration) => void;
+};
+
+// Explicit function to unregister the Service Worker
+export function unregister() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.ready
+      .then((registration) => {
+        registration.unregister();
+        console.log('Service Worker unregistered to prevent cache conflicts.');
+      })
+      .catch((error) => {
+        // console.error(error.message); // Commented out to reduce console noise
+      });
+  }
+}
+
+export function register(config?: Config) {
+  // CRITICAL: Check for production flag. If not production, unregister and exit.
+  if (process.env.NODE_ENV !== 'production' && 'serviceWorker' in navigator) {
+    unregister();
+    return;
+  }
+  
+  // Only proceed with registration if in production
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      const swUrl = '/service-worker.js';
+
+      if (isLocalhost) {
+        // This path should ideally only be hit if running a production build on localhost
+        checkValidServiceWorker(swUrl, config);
+        navigator.serviceWorker.ready.then(() => {
+          console.log(
+            'This web app is being served cache-first by a service worker.'
+          );
+        });
+      } else {
+        // Is not localhost. Just register service worker
+        registerValidSW(swUrl, config);
+      }
+    });
+  }
+}
+
+function registerValidSW(swUrl: string, config?: Config) {
+  // ... (rest of registration logic remains the same)
+  navigator.serviceWorker
+    .register(swUrl)
+    .then((registration) => {
+      registration.onupdatefound = () => {
+        // ... (existing update logic)
+      };
+    })
+    .catch((error) => {
+      console.error('Error during service worker registration:', error);
+    });
+}
+
+function checkValidServiceWorker(swUrl: string, config?: Config) {
+  // ... (rest of check logic remains the same)
+  fetch(swUrl, {
+    headers: { 'Service-Worker': 'script' },
+  })
+    .then((response) => {
+      // ... (existing 404/content-type check logic)
+      if (
+        response.status === 404 ||
+        (contentType != null && contentType.indexOf('javascript') === -1)
+      ) {
+        // The original logic here was confusing. In production, we assume it's there.
+        // In dev, we prevent reaching here with the new top-level check.
+        unregister(); // Aggressively unregister if something went wrong
+      } else {
+        registerValidSW(swUrl, config);
+      }
+    })
+    .catch(() => {
+      console.log('No internet connection found. App is running in offline mode.');
+    });
+}
+
+// ... (other helper functions remain the same: requestPersistentStorage, checkForUpdates, skipWaiting)
+// You may remove the helper functions if you don't use them directly.
+2. Minor Issue: Manual Script Versioning (HMR Interference)
+Your client/index.html manually appends a version query parameter (?v=${DEV_VERSION}) to your main script.
+
+File Affected: client/index.html
+
+Problem: This often conflicts with how Vite is designed to find and inject its Hot Module Replacement (HMR) client script into the page, potentially causing the hot reloading mechanism to fail or be unreliable.
+
+✅ Solution: Remove Manual Versioning in index.html
+Edit your client/index.html file to look like this (remove the ?v=${DEV_VERSION} part):
+
+HTML
+
+<body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script> 
+    
+    <script type="text/javascript" src="https://replit.com/public/js/replit-dev-banner.js"></script>
+  </body>
+</html>

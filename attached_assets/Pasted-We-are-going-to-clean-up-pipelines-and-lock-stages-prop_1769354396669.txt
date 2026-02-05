@@ -1,0 +1,63 @@
+We are going to clean up pipelines and lock stages properly.
+
+Goal:
+- ONE canonical backend pipeline (single source of truth) using deals.deal_stage
+- Admin and Partner should only have different VIEWS / filters, not different stage systems
+- Remove duplicate “Quotes” pipeline/page if it mirrors the same data
+
+Step 1 — Audit current state (NO CHANGES YET)
+1) Identify all fields used for workflow state:
+- deals.deal_stage
+- deals.status
+- quotes.status / sentAt / approvedAt
+- any other stage/status fields
+Report: where each is read/written and which one is the true source of truth.
+
+2) Confirm if we have TWO pipelines or ONE pipeline with two UIs:
+- Find the admin pipeline component/page and list the stages it displays
+- Find the partner/user pipeline component/page and list the stages it displays
+- Find the Quotes page and list what it displays and what data it uses
+For each UI, show the exact filter logic (e.g. stage values, query params) and the data source (which API route / storage method).
+
+3) Trace the data flow:
+- Which API endpoint(s) provide deals for admin vs partner?
+- Do they both pull from the same deals table and same deals.deal_stage?
+- Are there any separate tables or separate stage mappings for admin vs partner?
+Output: routes + storage methods + SQL/ORM query snippets.
+
+4) Trace stage transitions:
+List every place that updates deal_stage (or status) and which action triggers it:
+- send quote
+- approve quote
+- submit signup
+- agreement sent/signed
+- docs/review
+- approved/declined
+- delivered/live
+- LTR evidence/commission posted
+Output: file + function name for each stage update.
+
+Step 2 — Findings summary
+5) Provide a definitive answer:
+- Do we currently have 2 pipelines (two different stage systems) OR
+- One stage system + multiple UI views that are inconsistent?
+
+Step 3 — Fix plan (propose only, do not implement yet)
+6) Propose the final “canonical stage list” for deals.deal_stage and a mapping from current stages to final stages (non-destructive migration plan).
+7) Propose how to refactor UI:
+- Admin pipeline = view/filter of deals.deal_stage
+- Partner pipeline = view/filter of deals.deal_stage (simplified labels)
+- Remove Quotes page OR convert it into a saved filter tab (no separate pipeline)
+8) Propose a single workflow config file (shared/dealWorkflow.ts) that defines:
+- allowed stages in order
+- allowed transitions
+- CTAs per role per stage
+- next stage after each action
+9) Provide a regression checklist that tests the full lifecycle end-to-end.
+
+Deliverables:
+- Audit report with evidence (files/routes/queries)
+- Clear answer on whether 2 pipelines exist
+- Final stage list + migration mapping
+- UI refactor plan (admin vs partner views)
+- Workflow config plan + regression checklist

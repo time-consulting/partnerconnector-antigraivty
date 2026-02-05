@@ -1,0 +1,56 @@
+You are working on Partner Connector (Replit). I need you to audit and fix pipeline UX + a payments tab runtime error.
+
+Context: There are separate admin vs user pipeline UIs, but the workflow must stay consistent. Admin has extra controls, but partners/users must still see key milestones and statuses.
+
+ISSUES TO FIX
+
+A) USER PIPELINE VISIBILITY + CLARITY
+1) Users/partners cannot see the “Approved – awaiting sign up” stage/status because it only exists in the admin funnel.
+   - Requirement: users MUST see an equivalent stage/status in their pipeline when a quote is approved.
+   - Users should NOT see any sensitive signup/application internal fields, but they must see the state so they understand what’s next.
+   - Implement as either:
+     - same stage shown in user pipeline, OR
+     - a mapped/read-only “Approved – awaiting sign up” status badge/stage in the user UI.
+
+2) “Application sent to client” is not clear. It currently appears as “In progress”.
+   - Requirement: update the user-facing label/status to clearly say “Application sent to client” (or similar).
+   - Do not change underlying internal stage IDs if that breaks existing data/automations. If stage IDs must remain, implement a UI label mapping.
+
+Deliverables for A:
+- Identify where stages/statuses are defined and rendered for user pipeline (file paths).
+- Provide the exact change: either stage mapping table or stage list update.
+- Confirm what triggers the transition into these statuses (quote approved event, application sent event).
+
+B) ADMIN: COMMISSION CONFIRM UX
+3) When a deal reaches “Live / Confirm LTR / Commission”, admin must open the deal modal/card and scroll to bottom to confirm commission.
+   - Requirement: add a “Confirm Commission” button directly on the pipeline card (visible only in the relevant stage(s)).
+   - Clicking the button should open a small confirmation dialog (with key numbers: LTR/commission) and on confirm it should call the existing backend action used today.
+   - No new backend logic unless required; reuse existing confirm commission endpoint/function.
+   - Ensure idempotency: button should disable or show “Confirmed” once done.
+
+Deliverables for B:
+- Show where the current confirm commission action lives (component + API call).
+- Add card-level button + dialog, with stage gating.
+- Provide diff(s).
+
+C) PAYMENTS TAB ERROR
+4) Payments tab shows “Something went wrong” and doesn’t load.
+   - Requirement: find the root cause and fix it (not a workaround).
+   - Steps:
+     - Check browser console error, network calls, and stack trace.
+     - Identify the file/component causing it, and the failing API endpoint (if any).
+     - Fix null/undefined assumptions, auth/tenant scoping, or response shape mismatch.
+   - Add error boundary logging or better error message if needed, but primary goal is to make it load.
+
+Deliverables for C:
+- Paste the exact error stack trace and failing request (route + status code).
+- Fix with exact diff(s).
+- Confirm Payments tab loads successfully after fix.
+
+IMPORTANT RULES
+- Keep admin vs user permissions correct (users shouldn’t see sensitive fields).
+- Don’t rename stage IDs unless you provide a migration/compatibility mapping.
+- Provide a short “Before/After” flow summary for both user and admin.
+
+Output:
+Give me a plan first (files you’ll touch + approach), then implement changes with exact diffs and verify with manual steps you performed yourself.

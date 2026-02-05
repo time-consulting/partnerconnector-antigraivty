@@ -1,0 +1,16 @@
+node_modules
+.git
+.vercel
+.attached_assets
+logs
+.env
+.DS_Store
+replit*.json
+*.md
+*.log
+vite.config.ts
+technical_review.md
+setup-admin.js
+server/**/*.ts
+client/**/*.ts
+src/

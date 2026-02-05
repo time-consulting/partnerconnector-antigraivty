@@ -1,0 +1,251 @@
+📘 Partner Connect Training – Dojo LTR & Statement Handling
+1. What is LTR?
+
+LTR = Lifetime Rate
+
+Calculated using a customer’s card payment statement.
+
+Essential for:
+
+Showing how Dojo reduces costs.
+
+Verifying turnover.
+
+Spotting high-risk/restricted category businesses.
+
+💡 Best Practice:
+Always get a statement before making an offer. If needed, help the customer log in to their provider’s portal or request a copy.
+
+2. Why Statements Matter
+
+Trust: Statements prove the true cost, turnover, and provider setup.
+
+Accuracy: Prevents quoting the wrong rate.
+
+Conversion: Make the offer while the statement is open → higher chance of sign-up.
+
+3. Switcher Statement Comparison
+
+Once you have the statement, compare the customer’s current fees with Dojo’s offer.
+
+Highlight:
+
+Per-transaction savings.
+
+Monthly fixed fee reductions.
+
+Faster settlement (Dojo = next-day).
+
+4. Acquirer Statement Access Guide
+
+Below are the main card acquirers and how to obtain customer statements.
+
+🔹 Elavon
+
+UK: 0345 850 0195
+
+ROI: 1850 202120
+
+RMS: 01 4854946
+
+Portal: www.elavonconnect.com
+
+Email: documents@elavon.com
+
+Steps:
+
+Sign in / Register → input customer ID & bank details.
+
+Link emailed for access.
+
+Or call support → provide MID & bank details → username + temporary password sent.
+
+🔹 Worldpay / IOC Save
+
+Worldpay: 1800 242 637
+
+IOC Save: 01 254 8883
+
+Login support: 0345 761 6263
+
+Portal: mybusiness.worldpay.com
+
+Email: loyalty@worldpay.com
+ / wployalty@fisglobal.com
+ / closures@worldpay.com
+
+Steps:
+
+Login with onboarding email.
+
+If forgotten → reset via email.
+
+Go to Invoice section to view statement.
+
+Or call login support for reset + emailed statement.
+
+🔹 Barclaycard Payzone
+
+Support: 0844 822 2040
+
+Registration/Login: Barclaycard GPA Login
+
+Email: customerservices@payzone.co.uk
+
+Steps:
+
+Register using customer number, invoice number, and payment details.
+
+Access Statements Section.
+
+Switch to paperless for PDFs.
+
+🔹 Global Payments
+
+Portal: Business View
+
+Email: customerservices@globalpay.com
+
+Steps:
+
+Register with customer number & bank details.
+
+Launch Business View Lite (free).
+
+Go to Reports → eStatement → download PDF.
+
+🔹 First Data / Cardnet / XLN / Chip & Pin
+
+Support: 0345 606 5055
+
+Enroll: ClientLine Enrollment
+
+Login: My Client Line
+
+Steps:
+
+Enrol with MID & bank details.
+
+Username (cl…) + temporary password issued.
+
+Activate via email.
+
+🔹 Lloyds Cardnet
+
+Support: 01268 567 103
+
+Login: OmniPay RAMTool
+
+Steps:
+
+Login with username/password (sent via letter).
+
+Go to Funding Tab → Account Statement View.
+
+Select date range → download PDF.
+
+🔹 EVO
+
+Support: 0800 032 5658
+
+Register: EVO Signup
+
+Login: EVO Portal
+
+Steps:
+
+Enter GB number (drop last digit) + last 4 bank account digits.
+
+Create password → access bills.
+
+🔹 Valitor / Chip & Pin Solutions
+
+Portal: Valitor Login
+
+Steps:
+
+Click Forgot password.
+
+Reset via emailed link.
+
+🔹 Netpay Ireland
+
+Support: 01 447 5299
+
+Website: np.ie
+
+Steps:
+
+Customer must call to set up.
+
+Email link sent within 24 hours.
+
+🔹 SumUp
+
+UK: 020 3510 0160 | ROI: 01 6971668
+
+Website: sumup.co.uk
+
+Steps:
+
+Login → Forgot password.
+
+Reset link sent to registered email.
+
+🔹 AIB Merchant Services
+
+Support: 0818 724 724 (IRE) | 0371 200 1436 (GB)
+
+Portal: Insight AIBMS
+
+Steps:
+
+Customer calls → setup in 5 minutes.
+
+Email sent to activate.
+
+🔹 eCOMM 365
+
+Support: 046 901 1288
+
+Website: ecomm365.com
+
+Steps:
+
+Customer calls → setup.
+
+Email activation link provided.
+
+🔹 BOIPA
+
+Support: 1800 806 670
+
+Website: boipa.com
+
+Steps:
+
+Create account → enter ID + last 4 bank digits.
+
+Activation link sent by email.
+
+🔹 PayPal
+
+Portal: PayPal Statements
+
+Steps:
+
+Go to Activity → Statements → Custom.
+
+Choose type, date range, and format.
+
+🔹 Square
+
+Portal: Square Login
+
+Steps:
+
+Dashboard → Reports → choose date range.
+
+Export CSV for fees.
+
+For transactions → Dashboard → Transactions.

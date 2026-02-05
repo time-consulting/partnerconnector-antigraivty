@@ -1,0 +1,118 @@
+We need to connect the Admin Deal Funnel (pipeline) to the Payments tab so commission is created from LIVE, then approved + paid separately for security.
+
+GOAL (high level):
+- Admin funnel is the operational workflow (dealStage).
+- Payments tab is the financial ledger (paymentStatus).
+- Commission is CREATED from the LIVE stage in the admin deal modal, then sent to Payments for APPROVAL and PAYOUT in separate steps.
+
+========================
+1) WHEN TO CREATE COMMISSION
+========================
+Trigger point:
+- When a deal reaches dealStage = 'live' (or 'live_confirm_ltr'), the admin should see a CTA button in the deal modal:
+  Button label: "Confirm LTR / Create Commission"
+
+This button must only appear for admins and only when:
+- dealStage IN ('live','live_confirm_ltr')
+- AND there is no existing payment record for this deal OR the existing payment is not yet approved/paid.
+
+========================
+2) WHAT HAPPENS WHEN ADMIN CLICKS THE BUTTON (LIVE -> PAYMENT RECORD)
+========================
+On click:
+A) Open a modal/form that asks admin for:
+- totalCommissionAmount (required)
+- currency (default GBP)
+- optional evidence upload/link (bill/statement) (recommended)
+- notes (optional)
+
+B) Create or update a Payment record linked to dealId:
+- payment.dealId = deal.id
+- payment.grossAmount = totalCommissionAmount
+- payment.status = 'needs_approval'
+- payment.createdBy = adminUserId
+- payment.createdAt = now()
+- payment.evidenceFileId or evidenceUrl (if provided)
+
+C) Run existing "Calculate Split" logic immediately after amount entry:
+- Detect upline chain (up to 2 uplines)
+- Calculate split amounts for:
+  - level0 (direct referrer)
+  - level1 (upline)
+  - level2 (upline)
+- Save the breakdown into payment_splits (or existing splits structure) with:
+  - paymentId
+  - beneficiaryUserId
+  - level
+  - percentage
+  - amount
+  - status = 'pending'
+IMPORTANT: Store the calculated split amounts as fixed values at creation time (ledger), do not rely on recalculating later.
+
+D) Update deal funnel stage to reflect commission is waiting:
+- Set dealStage = 'invoice_received' (or whichever stage you want to represent "commission created and waiting approval")
+- Alternatively keep dealStage at 'live_confirm_ltr' until evidence is attached, then move to 'invoice_received' once created.
+
+========================
+3) PAYMENTS TAB WORKFLOW (APPROVAL + PAYOUT SECURITY)
+========================
+In Payments tab:
+A) Show a queue for payments with status = 'needs_approval'
+- Display: deal name, productType, referrer, grossAmount, evidence link, split summary
+- Include a button: "Approve"
+
+B) Approve action:
+- Only admins (or finance role if exists) can approve.
+- On approve:
+  - payment.status = 'approved'
+  - payment.approvedBy = adminUserId
+  - payment.approvedAt = now()
+  - Lock amounts: prevent editing grossAmount and splits after approval unless reverted to draft (with audit log).
+
+C) Mark as Paid action:
+- Only allowed if payment.status = 'approved'
+- Button: "Mark Paid"
+- On mark paid:
+  - payment.status = 'paid'
+  - payment.paidBy = adminUserId
+  - payment.paidAt = now()
+  - Update each split row status = 'paid'
+  - Optionally set dealStage = 'completed' (or 'commission_posted') AFTER payment is paid.
+
+========================
+4) UI REQUIREMENTS (DEAL MODAL + PAYMENTS)
+========================
+Deal modal (admin):
+- At LIVE/LTR stages show:
+  - "Confirm LTR / Create Commission" if no payment exists
+  - If payment exists:
+    - show payment status badge (Needs Approval / Approved / Paid)
+    - show gross amount + split preview
+    - if needs_approval, allow “Edit amount” ONLY before approval (optional)
+
+Payments tab:
+- Add filters by:
+  - productType
+  - payment.status (needs_approval, approved, paid)
+  - date
+  - referrer/user
+- Clicking a payment opens a detail view showing:
+  - evidence
+  - audit trail (createdBy/approvedBy/paidBy timestamps)
+  - split breakdown (levels)
+
+========================
+5) SECURITY + GUARDRAILS
+========================
+- Normal partners/users must NOT be able to create/approve/pay payments.
+- /api/admin/payments/* must be admin-protected (403 for normal users).
+- Payment can’t be marked paid unless approvedBy exists.
+- After approval, prevent modifications to gross amount or split amounts (unless explicit "revert to draft" with audit log).
+
+========================
+DELIVERABLES
+========================
+- Deal modal button at LIVE creates/updates a payment record and pushes it into Payments tab (needs_approval).
+- Payments tab supports approve -> mark paid flow.
+- DealStage progression updated correctly (live -> invoice_received -> completed OR your chosen mapping).
+- Files changed + quick test steps.

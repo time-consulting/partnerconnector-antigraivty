@@ -1,0 +1,131 @@
+Short Brief (What to build)
+
+Create a dashboard + leads management experience that feels consistent with our black/blue/white theme.
+
+Use a left side menu only (remove top menu on desktop to avoid duplicates).
+
+Make everything simple, fast, and mobile-friendly.
+
+Objectives
+
+Clarity at a glance: Users should instantly see key stats and what to do next.
+
+Fast lead actions: Add, update, request quote, and move stages with minimal clicks.
+
+Growth-first: “Invite/Add team member” is prominent and easy.
+
+Consistency: Same look/feel, spacing, buttons, and interactions across pages.
+
+Navigation & Layout
+
+Keep a collapsible left sidebar for main navigation.
+
+Dashboard is the home. Leads is a dedicated page.
+
+On mobile, the sidebar collapses into a hamburger; content remains the focus.
+
+Dashboard (reference for style consistency)
+
+Top: greeting + 3 snapshot cards (Deals Submitted, Commission Pending, Referrals Made).
+
+Prominent Add Team Member button near the top.
+
+Quick Actions: Submit a deal, Track a referral, View payout history.
+
+Below: Tasks, Recent referrals, Suggestions.
+
+Leads Management (Kanban CRM)
+
+Show a pipeline board with these columns (in order):
+
+My Leads → Contacted → Submitted → Quote Received → Agreed
+
+Each lead is a card showing: name, business, small stage badge, and quick actions.
+
+Drag and drop to move cards between stages.
+
+Click a card to open a clean details panel with:
+
+Editable contact fields
+
+Notes (timeline)
+
+Activity history
+
+Request Quote button
+
+Add a small kebab (⋮) menu on the card for Delete with confirmation.
+
+Search bar at the top filters live by name, business, email, phone.
+
+Request Quote Flow (smooth, in one place)
+
+Pressing Request Quote opens a simple pop-up on the same page.
+
+Pre-fill known info; clearly mark anything missing.
+
+Submitting:
+
+Creates a referral for the admin team
+
+Automatically moves the card to “Submitted”
+
+Shows a clear success message
+
+Uploading/Adding Leads
+
+Primary Add Lead button opens a simple, clean form.
+
+Only ask for essentials first; allow editing more details later in the lead panel.
+
+The new lead appears in My Leads.
+
+Mobile Experience
+
+Columns slide horizontally (swipe/scroll) so it fits on small screens.
+
+Sticky top bar with Search and Add Lead.
+
+Tap targets are large and easy; pop-ups fit mobile.
+
+Admin Handoff (smooth submission → quote → approval)
+
+When a user submits a quote request:
+
+Admins receive it in their queue
+
+Admins can acknowledge, ask for missing info, and attach a quote
+
+User sees the lead move to Quote Received and can Accept to move to Agreed
+
+Permissions & Safety
+
+Users see only their own leads; admins see all.
+
+Every change is logged in an activity trail for that lead.
+
+Delete asks for confirmation and can be undone by an admin (soft delete is fine).
+
+Consistency & Look
+
+Use the same theme as the dashboard: black background, blue accents, clean white text.
+
+Keep spacing, button styles, and hover states consistent.
+
+Subtle glow on active/hover elements is OK; keep it tasteful.
+
+Performance & Feedback
+
+The board should feel instant: show quick loading states, instant visual updates, and friendly toasts.
+
+Large boards should still scroll smoothly; avoid clutter.
+
+Success Criteria (how we’ll know it’s right)
+
+I can add a lead, drag it across stages, open it, add notes, request a quote, and see it move to Submitted — all easily, without leaving the page.
+
+Search finds the right leads as I type.
+
+On mobile, I can swipe between columns and still access all actions.
+
+The style matches the dashboard and there’s only one navigation menu (left side).
