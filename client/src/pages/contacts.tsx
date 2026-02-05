@@ -849,26 +849,26 @@ export default function ContactsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+    <div className="min-h-screen bg-background">
       <Sidebar onExpandChange={setSidebarExpanded} />
       <div className={sidebarExpanded ? 'ml-64' : 'ml-20'}>
         <div className="p-6 lg:p-8">
           {/* Header */}
           <div className="mb-8">
-            <p className="text-blue-600 text-sm font-medium tracking-wide uppercase mb-2">Contact Management</p>
+            <p className="text-primary text-sm font-medium tracking-wide uppercase mb-2">Contact Management</p>
             <div className="flex justify-between items-center mb-4">
               <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent" data-testid="page-title">
+                <h1 className="text-3xl font-bold text-foreground" data-testid="page-title">
                   Contacts
                 </h1>
-                <p className="text-gray-600 mt-1">
+                <p className="text-muted-foreground mt-1">
                   Manage your business contacts and relationships
                 </p>
               </div>
               <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
                 <DialogTrigger asChild>
                   <Button
-                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg"
+                    className="bg-primary text-primary-foreground hover:bg-primary/90"
                     data-testid="button-add-contact"
                   >
                     <Plus className="w-4 h-4 mr-2" />
@@ -890,18 +890,18 @@ export default function ContactsPage() {
             {/* Search and Filters */}
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                 <Input
                   placeholder="Search contacts by name, email, or company..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 bg-white border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500"
+                  className="pl-10"
                   data-testid="input-search-contacts"
                 />
               </div>
               <div className="flex gap-2">
                 <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-40 bg-white border-gray-300 text-gray-900" data-testid="select-sort-by">
+                  <SelectTrigger className="w-40" data-testid="select-sort-by">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -914,13 +914,12 @@ export default function ContactsPage() {
                   variant="outline"
                   size="icon"
                   onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
-                  className="border-gray-300 text-gray-900 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-500"
                   data-testid="button-sort-order"
                 >
                   <ArrowUpDown className="w-4 h-4" />
                 </Button>
                 <Select value={filterBy} onValueChange={setFilterBy}>
-                  <SelectTrigger className="w-40 bg-white border-gray-300 text-gray-900" data-testid="select-filter-by">
+                  <SelectTrigger className="w-40" data-testid="select-filter-by">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -936,19 +935,19 @@ export default function ContactsPage() {
           {/* Contacts List */}
           <div className="grid gap-4">
             {filteredAndSortedContacts.length === 0 ? (
-              <div className="bg-white rounded-lg border border-gray-200 p-12 text-center shadow-sm">
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <User className="w-8 h-8 text-blue-600" />
+              <div className="rocket-card p-12 text-center">
+                <div className="rocket-icon-box mx-auto mb-4">
+                  <User className="w-6 h-6" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                <h3 className="text-lg font-semibold text-foreground mb-2">
                   No contacts found
                 </h3>
-                <p className="text-gray-600 mb-4">
+                <p className="text-muted-foreground mb-4">
                   Get started by creating your first contact
                 </p>
                 <Button
                   onClick={() => setIsFormOpen(true)}
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+                  className="bg-primary text-primary-foreground hover:bg-primary/90"
                   data-testid="button-create-first-contact"
                 >
                   <Plus className="w-4 h-4 mr-2" />
@@ -959,19 +958,19 @@ export default function ContactsPage() {
               filteredAndSortedContacts.map((contact: Contact) => (
                 <div
                   key={contact.id}
-                  className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md hover:border-blue-300 transition-all cursor-pointer"
+                  className="rocket-card p-6 cursor-pointer hover:border-primary transition-all"
                   data-testid={`contact-card-${contact.id}`}
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start space-x-4 flex-1 min-w-0">
-                      <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0 shadow-md">
+                      <div className="w-14 h-14 bg-primary/20 border border-primary/30 rounded-full flex items-center justify-center text-primary font-bold text-lg flex-shrink-0">
                         {contact.firstName.charAt(0)}{contact.lastName.charAt(0)}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-xl font-bold text-gray-900 mb-1">
+                        <h3 className="text-xl font-bold text-foreground mb-1">
                           {contact.firstName} {contact.lastName}
                         </h3>
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-600 mb-2">
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground mb-2">
                           {contact.company && (
                             <div className="flex items-center">
                               <Building className="w-4 h-4 mr-1.5 flex-shrink-0" />
@@ -994,12 +993,12 @@ export default function ContactsPage() {
                         {contact.interestedProducts && contact.interestedProducts.length > 0 && (
                           <div className="flex flex-wrap gap-1.5 mt-2">
                             {contact.interestedProducts.slice(0, 3).map(product => (
-                              <Badge key={product} className="bg-blue-100 text-blue-700 hover:bg-blue-200 text-xs">
+                              <Badge key={product} variant="secondary" className="text-xs">
                                 {product}
                               </Badge>
                             ))}
                             {contact.interestedProducts.length > 3 && (
-                              <Badge className="bg-gray-100 text-gray-700 text-xs">
+                              <Badge variant="secondary" className="text-xs">
                                 +{contact.interestedProducts.length - 3} more
                               </Badge>
                             )}
@@ -1014,7 +1013,7 @@ export default function ContactsPage() {
                           size="sm"
                           onClick={() => handleGoToOpportunity(contactOpportunityMap[contact.id])}
                           data-testid={`button-go-to-opportunity-${contact.id}`}
-                          className="bg-green-50 hover:bg-green-100 text-green-700 border-green-300 font-medium"
+                          className="border-green-600/50 text-green-400 hover:bg-green-600/10 hover:border-green-500"
                         >
                           <ExternalLink className="w-4 h-4 mr-1.5" />
                           Go to Opportunity
@@ -1026,7 +1025,7 @@ export default function ContactsPage() {
                           onClick={() => handleConvertToOpportunity(contact)}
                           disabled={convertToOpportunityMutation.isPending}
                           data-testid={`button-convert-${contact.id}`}
-                          className="border-blue-300 text-blue-700 hover:bg-blue-50 font-medium"
+                          className="border-primary/50 text-primary hover:bg-primary/10 hover:border-primary"
                         >
                           {convertToOpportunityMutation.isPending ? "Converting..." : "Convert to Opportunity"}
                         </Button>
@@ -1048,7 +1047,7 @@ export default function ContactsPage() {
                           <DropdownMenuItem
                             onClick={() => handleDeleteContact(contact.id)}
                             data-testid={`menu-delete-${contact.id}`}
-                            className="text-red-600 hover:text-red-700 focus:text-red-700"
+                            className="text-destructive focus:text-destructive"
                           >
                             <Trash2 className="w-4 h-4 mr-2" />
                             Delete Contact

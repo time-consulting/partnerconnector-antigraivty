@@ -65,8 +65,9 @@ export default function AdminBackendPage() {
     );
   }
 
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+    <div className="min-h-screen bg-background">
       <SideNavigation />
       <div className="lg:ml-16">
         <Navigation />
@@ -82,10 +83,10 @@ export default function AdminBackendPage() {
               <ArrowLeft className="h-4 w-4" />
               Back to Admin Dashboard
             </Button>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent" data-testid="page-title-admin-backend">
+            <h1 className="text-3xl font-bold text-foreground" data-testid="page-title-admin-backend">
               Backend Management
             </h1>
-            <p className="text-gray-600 mt-2">
+            <p className="text-muted-foreground mt-2">
               System settings, user management, and analytics
             </p>
           </div>
