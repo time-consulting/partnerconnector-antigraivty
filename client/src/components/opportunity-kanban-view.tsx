@@ -279,9 +279,9 @@ function OpportunityCard({
           )}
 
           {opportunity.assignedTo && (
-            <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <span className="font-medium">Assigned to:</span>
-              <span className="truncate bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">{opportunity.assignedTo}</span>
+              <span className="truncate bg-secondary px-2 py-1 rounded-full">{opportunity.assignedTo}</span>
             </div>
           )}
         </div>
