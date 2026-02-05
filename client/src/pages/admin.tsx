@@ -3,8 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import SideNavigation from "@/components/side-navigation";
-import Navigation from "@/components/navigation";
+import Sidebar from "@/components/sidebar";
 import { AdminDealsPipeline } from "@/components/admin-deals-pipeline";
 import {
   DollarSign,
@@ -35,9 +34,8 @@ export default function AdminDashboard() {
   if (!user?.isAdmin) {
     return (
       <div className="min-h-screen bg-background">
-        <SideNavigation />
-        <div className="lg:ml-16">
-          <Navigation />
+        <Sidebar />
+        <div className="ml-0 md:ml-64">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <Card className="bg-card border-border">
               <CardContent className="p-8 text-center">
@@ -53,10 +51,8 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      <SideNavigation />
-      <div className="lg:ml-16">
-        <Navigation />
-        
+      <Sidebar />
+      <div className="ml-0 md:ml-64">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Header with Action Buttons */}
           <div className="mb-8">
@@ -74,7 +70,7 @@ export default function AdminDashboard() {
                   Track and manage all deals from quote request to completion
                 </p>
               </div>
-              
+
               {/* Quick Access Buttons */}
               <div className="flex flex-wrap gap-2">
                 <Button
