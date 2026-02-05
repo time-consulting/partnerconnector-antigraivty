@@ -110,13 +110,13 @@ const businessTypes = [
   "Other"
 ];
 
-function OpportunityForm({ 
-  opportunity, 
-  onClose, 
+function OpportunityForm({
+  opportunity,
+  onClose,
   onSave,
-  onDelete 
-}: { 
-  opportunity?: Opportunity; 
+  onDelete
+}: {
+  opportunity?: Opportunity;
   onClose: () => void;
   onSave: (data: OpportunityFormData) => void;
   onDelete?: (opportunityId: string) => void;
@@ -261,8 +261,8 @@ function OpportunityForm({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="businessType">Business Type</Label>
-                  <Select 
-                    value={formData.businessType} 
+                  <Select
+                    value={formData.businessType}
                     onValueChange={(value) => setFormData(prev => ({ ...prev, businessType: value }))}
                   >
                     <SelectTrigger data-testid="select-business-type">
@@ -277,8 +277,8 @@ function OpportunityForm({
                 </div>
                 <div>
                   <Label htmlFor="status">Status</Label>
-                  <Select 
-                    value={formData.status} 
+                  <Select
+                    value={formData.status}
                     onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
                   >
                     <SelectTrigger data-testid="select-status">
@@ -296,8 +296,8 @@ function OpportunityForm({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="stage">Stage</Label>
-                  <Select 
-                    value={formData.stage} 
+                  <Select
+                    value={formData.stage}
                     onValueChange={(value) => setFormData(prev => ({ ...prev, stage: value }))}
                   >
                     <SelectTrigger data-testid="select-stage">
@@ -314,8 +314,8 @@ function OpportunityForm({
                 </div>
                 <div>
                   <Label htmlFor="priority">Priority</Label>
-                  <Select 
-                    value={formData.priority} 
+                  <Select
+                    value={formData.priority}
                     onValueChange={(value) => setFormData(prev => ({ ...prev, priority: value }))}
                   >
                     <SelectTrigger data-testid="select-priority">
@@ -462,32 +462,32 @@ function OpportunityForm({
 
         {/* FOOTER - Spans Full Width */}
         <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-4 bg-gray-50 dark:bg-gray-800/50">
-          
+
           {/* Mobile Layout - Stacked buttons */}
           <div className="flex flex-col space-y-4 sm:hidden">
             {/* Primary action button first on mobile */}
-            <Button 
+            <Button
               type="submit"
               data-testid="button-save-opportunity"
               className="w-full h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-bold shadow-xl transition-all duration-200"
             >
               {opportunity ? "🚀 Update" : "✨ Create"}
             </Button>
-            
-            <Button 
-              type="button" 
-              variant="outline" 
+
+            <Button
+              type="button"
+              variant="outline"
               onClick={onClose}
               data-testid="button-cancel"
               className="w-full h-12 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl font-semibold transition-all duration-200"
             >
               Cancel
             </Button>
-            
+
             {/* Delete Button - only show when editing existing opportunity */}
             {opportunity && onDelete && (
-              <Button 
-                type="button" 
+              <Button
+                type="button"
                 variant="destructive"
                 onClick={() => {
                   if (window.confirm('Are you sure you want to delete this opportunity? This action cannot be undone.')) {
@@ -507,8 +507,8 @@ function OpportunityForm({
           <div className="hidden sm:flex justify-between items-center">
             {/* Delete Button - only show when editing existing opportunity */}
             {opportunity && onDelete && (
-              <Button 
-                type="button" 
+              <Button
+                type="button"
                 variant="destructive"
                 onClick={() => {
                   if (window.confirm('Are you sure you want to delete this opportunity? This action cannot be undone.')) {
@@ -522,18 +522,18 @@ function OpportunityForm({
                 Delete Opportunity
               </Button>
             )}
-            
+
             <div className="flex space-x-4">
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 onClick={onClose}
                 data-testid="button-cancel"
                 className="h-12 px-8 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg"
               >
                 Cancel
               </Button>
-              <Button 
+              <Button
                 type="submit"
                 data-testid="button-save-opportunity"
                 className="h-12 px-8 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-bold shadow-xl transition-all duration-200 transform hover:scale-105 hover:shadow-2xl"
@@ -641,6 +641,8 @@ export default function OpportunitiesPage() {
     },
     onError: (error: any) => {
       console.error("Failed to move opportunity:", error.message || error);
+      // Revert optimistic update on error
+      queryClient.invalidateQueries({ queryKey: ['/api/opportunities'] });
     },
   });
 
@@ -649,14 +651,14 @@ export default function OpportunitiesPage() {
       const matchesSearch = `${opportunity.businessName} ${opportunity.contactFirstName} ${opportunity.contactLastName} ${opportunity.contactEmail}`
         .toLowerCase()
         .includes(searchTerm.toLowerCase());
-      
+
       if (filterBy === "all") return matchesSearch;
       if (filterBy === "status") return matchesSearch && opportunity.status === filterBy;
       return matchesSearch;
     })
     .sort((a: Opportunity, b: Opportunity) => {
       let aValue, bValue;
-      
+
       switch (sortBy) {
         case "business":
           aValue = a.businessName || "";
@@ -678,7 +680,7 @@ export default function OpportunitiesPage() {
           aValue = a.businessName;
           bValue = b.businessName;
       }
-      
+
       if (sortOrder === "asc") {
         return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
       } else {
@@ -699,24 +701,24 @@ export default function OpportunitiesPage() {
   // Handle drag and drop for Kanban
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-    
+
     if (!over) return;
-    
+
     const opportunityId = active.id as string;
     const newStatus = over.id as string;
-    
+
     // Find the opportunity being dragged
     const opportunity = opportunities.find((opp: Opportunity) => opp.id === opportunityId);
     if (!opportunity || opportunity.status === newStatus) return;
-    
+
     // Special handling for "Submit Lead" stage - navigate to deals form but keep in pipeline
     if (newStatus === "submit_lead") {
       // First update the status to "submit_lead"
-      updateOpportunityStatusMutation.mutate({ 
-        id: opportunityId, 
-        status: newStatus 
+      updateOpportunityStatusMutation.mutate({
+        id: opportunityId,
+        status: newStatus
       });
-      
+
       // Then navigate to submit-deals page with pre-populated data
       const params = new URLSearchParams({
         opportunityId: opportunity.id,
@@ -734,18 +736,18 @@ export default function OpportunitiesPage() {
       setLocation(`/submit-deal?${params.toString()}`);
       return;
     }
-    
+
     // Optimistically update the UI
-    queryClient.setQueryData(['/api/opportunities'], (old: Opportunity[] = []) => 
-      old.map((opp) => 
+    queryClient.setQueryData(['/api/opportunities'], (old: Opportunity[] = []) =>
+      old.map((opp) =>
         opp.id === opportunityId ? { ...opp, status: newStatus } : opp
       )
     );
-    
+
     // Update on server
-    updateOpportunityStatusMutation.mutate({ 
-      id: opportunityId, 
-      status: newStatus 
+    updateOpportunityStatusMutation.mutate({
+      id: opportunityId,
+      status: newStatus
     });
   };
 
@@ -814,10 +816,10 @@ export default function OpportunitiesPage() {
                     List
                   </Button>
                 </div>
-                
+
                 <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
                   <DialogTrigger asChild>
-                    <Button 
+                    <Button
                       className="bg-primary text-primary-foreground hover:bg-primary/90"
                       data-testid="button-add-opportunity"
                     >
@@ -829,7 +831,7 @@ export default function OpportunitiesPage() {
                     <DialogHeader>
                       <DialogTitle>Create New Opportunity</DialogTitle>
                     </DialogHeader>
-                    <OpportunityForm 
+                    <OpportunityForm
                       onClose={() => setIsFormOpen(false)}
                       onSave={handleCreateOpportunity}
                     />
@@ -899,7 +901,7 @@ export default function OpportunitiesPage() {
               <p className="text-muted-foreground mb-4">
                 Start tracking your sales pipeline by creating your first opportunity
               </p>
-              <Button 
+              <Button
                 onClick={() => setIsFormOpen(true)}
                 className="bg-primary text-primary-foreground hover:bg-primary/90"
                 data-testid="button-create-first-opportunity"
@@ -909,136 +911,136 @@ export default function OpportunitiesPage() {
               </Button>
             </div>
           ) : viewMode === "kanban" ? (
-          <Suspense fallback={<div className="text-center py-8">Loading Kanban view...</div>}>
-            <OpportunityKanbanView
-              opportunities={filteredAndSortedOpportunities}
-              isLoading={isLoading}
-              onEditDetails={handleEditDetails}
-              onDelete={deleteOpportunityMutation.mutate}
-              onDragEnd={handleDragEnd}
-            />
-          </Suspense>
-        ) : (
-          <div className="grid gap-4" data-testid="opportunities-list">
-            {filteredAndSortedOpportunities.map((opportunity: Opportunity) => (
-              <Card 
-                key={opportunity.id} 
-                className="hover:shadow-md transition-shadow cursor-pointer"
-                data-testid={`opportunity-card-${opportunity.id}`}
-              >
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4 flex-1">
-                      <div className="w-12 h-12 bg-gradient-to-r from-green-600 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
-                        <TrendingUp className="w-6 h-6" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                            {opportunity.businessName}
-                          </h3>
-                          <Badge className={getStatusColor(opportunity.status)}>
-                            {statusOptions.find(s => s.value === opportunity.status)?.label || opportunity.status}
-                          </Badge>
-                          <Badge className={getPriorityColor(opportunity.priority || "medium")}>
-                            {priorityOptions.find(p => p.value === opportunity.priority)?.label || opportunity.priority || "Medium"}
-                          </Badge>
-                        </div>
-                        
-                        <div className="flex items-center space-x-6 text-sm text-gray-600 dark:text-gray-400">
-                          {opportunity.contactFirstName && opportunity.contactLastName && (
-                            <div className="flex items-center">
-                              <User className="w-3 h-3 mr-1" />
-                              {opportunity.contactFirstName} {opportunity.contactLastName}
-                            </div>
-                          )}
-                          {opportunity.contactEmail && (
-                            <div className="flex items-center">
-                              <Mail className="w-3 h-3 mr-1" />
-                              {opportunity.contactEmail}
-                            </div>
-                          )}
-                          {opportunity.contactPhone && (
-                            <div className="flex items-center">
-                              <Phone className="w-3 h-3 mr-1" />
-                              {opportunity.contactPhone}
-                            </div>
-                          )}
-                          {opportunity.estimatedValue && (
-                            <div className="flex items-center">
-                              <DollarSign className="w-3 h-3 mr-1" />
-                              £{opportunity.estimatedValue}
-                            </div>
-                          )}
-                          {opportunity.expectedCloseDate && (
-                            <div className="flex items-center">
-                              <Calendar className="w-3 h-3 mr-1" />
-                              {new Date(opportunity.expectedCloseDate).toLocaleDateString()}
-                            </div>
-                          )}
-                        </div>
-                        
-                        <div className="mt-2">
-                          <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
-                            {opportunity.stage?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center space-x-2">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" data-testid={`button-menu-${opportunity.id}`}>
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem 
-                            onClick={() => setSelectedOpportunity(opportunity)}
-                            data-testid={`menu-edit-${opportunity.id}`}
-                          >
-                            <Edit3 className="w-4 h-4 mr-2" />
-                            Edit Opportunity
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-
-        {/* Edit Opportunity Dialog */}
-        <Dialog 
-          open={!!selectedOpportunity} 
-          onOpenChange={(open) => !open && setSelectedOpportunity(null)}
-        >
-          <DialogContent className="!w-[98vw] !max-w-[98vw] !h-[95vh] !max-h-[95vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                Edit Opportunity: {selectedOpportunity?.businessName}
-              </DialogTitle>
-            </DialogHeader>
-            {selectedOpportunity && (
-              <OpportunityForm 
-                key={selectedOpportunity.id}
-                opportunity={selectedOpportunity}
-                onClose={() => setSelectedOpportunity(null)}
-                onSave={handleUpdateOpportunity}
-                onDelete={(opportunityId) => {
-                  deleteOpportunityMutation.mutate(opportunityId, {
-                    onSuccess: () => {
-                      setSelectedOpportunity(null);
-                    }
-                  });
-                }}
+            <Suspense fallback={<div className="text-center py-8">Loading Kanban view...</div>}>
+              <OpportunityKanbanView
+                opportunities={filteredAndSortedOpportunities}
+                isLoading={isLoading}
+                onEditDetails={handleEditDetails}
+                onDelete={deleteOpportunityMutation.mutate}
+                onDragEnd={handleDragEnd}
               />
-            )}
-          </DialogContent>
-        </Dialog>
+            </Suspense>
+          ) : (
+            <div className="grid gap-4" data-testid="opportunities-list">
+              {filteredAndSortedOpportunities.map((opportunity: Opportunity) => (
+                <Card
+                  key={opportunity.id}
+                  className="hover:shadow-md transition-shadow cursor-pointer"
+                  data-testid={`opportunity-card-${opportunity.id}`}
+                >
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4 flex-1">
+                        <div className="w-12 h-12 bg-gradient-to-r from-green-600 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
+                          <TrendingUp className="w-6 h-6" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                              {opportunity.businessName}
+                            </h3>
+                            <Badge className={getStatusColor(opportunity.status)}>
+                              {statusOptions.find(s => s.value === opportunity.status)?.label || opportunity.status}
+                            </Badge>
+                            <Badge className={getPriorityColor(opportunity.priority || "medium")}>
+                              {priorityOptions.find(p => p.value === opportunity.priority)?.label || opportunity.priority || "Medium"}
+                            </Badge>
+                          </div>
+
+                          <div className="flex items-center space-x-6 text-sm text-gray-600 dark:text-gray-400">
+                            {opportunity.contactFirstName && opportunity.contactLastName && (
+                              <div className="flex items-center">
+                                <User className="w-3 h-3 mr-1" />
+                                {opportunity.contactFirstName} {opportunity.contactLastName}
+                              </div>
+                            )}
+                            {opportunity.contactEmail && (
+                              <div className="flex items-center">
+                                <Mail className="w-3 h-3 mr-1" />
+                                {opportunity.contactEmail}
+                              </div>
+                            )}
+                            {opportunity.contactPhone && (
+                              <div className="flex items-center">
+                                <Phone className="w-3 h-3 mr-1" />
+                                {opportunity.contactPhone}
+                              </div>
+                            )}
+                            {opportunity.estimatedValue && (
+                              <div className="flex items-center">
+                                <DollarSign className="w-3 h-3 mr-1" />
+                                £{opportunity.estimatedValue}
+                              </div>
+                            )}
+                            {opportunity.expectedCloseDate && (
+                              <div className="flex items-center">
+                                <Calendar className="w-3 h-3 mr-1" />
+                                {new Date(opportunity.expectedCloseDate).toLocaleDateString()}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="mt-2">
+                            <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
+                              {opportunity.stage?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" data-testid={`button-menu-${opportunity.id}`}>
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => setSelectedOpportunity(opportunity)}
+                              data-testid={`menu-edit-${opportunity.id}`}
+                            >
+                              <Edit3 className="w-4 h-4 mr-2" />
+                              Edit Opportunity
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {/* Edit Opportunity Dialog */}
+          <Dialog
+            open={!!selectedOpportunity}
+            onOpenChange={(open) => !open && setSelectedOpportunity(null)}
+          >
+            <DialogContent className="!w-[98vw] !max-w-[98vw] !h-[95vh] !max-h-[95vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>
+                  Edit Opportunity: {selectedOpportunity?.businessName}
+                </DialogTitle>
+              </DialogHeader>
+              {selectedOpportunity && (
+                <OpportunityForm
+                  key={selectedOpportunity.id}
+                  opportunity={selectedOpportunity}
+                  onClose={() => setSelectedOpportunity(null)}
+                  onSave={handleUpdateOpportunity}
+                  onDelete={(opportunityId) => {
+                    deleteOpportunityMutation.mutate(opportunityId, {
+                      onSuccess: () => {
+                        setSelectedOpportunity(null);
+                      }
+                    });
+                  }}
+                />
+              )}
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     </div>
