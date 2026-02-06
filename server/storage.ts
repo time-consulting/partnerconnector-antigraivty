@@ -3603,17 +3603,24 @@ export class DatabaseStorage implements IStorage {
         approvals.push(overrideApproval);
 
         // ✅ FIX: Also create commission payment record so it appears in withdrawal section
-        await this.createCommissionPayment({
-          dealId,
-          recipientId: entry.parentId,
-          level: entry.level,
-          amount: overrideCommissionAmount.toFixed(2),
-          percentage: (overridePercentage * 100).toFixed(2),
-          totalCommission: totalCommission.toString(),
-          businessName: clientBusinessName,
-          paymentStatus: 'approved',  // Ready for withdrawal
-          approvalStatus: 'approved',
-        });
+        console.log(`[COMMISSION] About to create payment for Level ${entry.level} override: recipientId=${entry.parentId}, amount=${overrideCommissionAmount.toFixed(2)}`);
+        try {
+          const paymentResult = await this.createCommissionPayment({
+            dealId,
+            recipientId: entry.parentId,
+            level: entry.level,
+            amount: overrideCommissionAmount.toFixed(2),
+            percentage: (overridePercentage * 100).toFixed(2),
+            totalCommission: totalCommission.toString(),
+            businessName: clientBusinessName,
+            paymentStatus: 'approved',  // Ready for withdrawal
+            approvalStatus: 'approved',
+          });
+          console.log(`[COMMISSION] ✅ Successfully created payment record for Level ${entry.level}: ID=${paymentResult?.id}`);
+        } catch (paymentError: any) {
+          console.error(`[COMMISSION] ❌ FAILED to create payment for Level ${entry.level}: ${paymentError.message}`);
+          console.error(`[COMMISSION] Full error:`, paymentError);
+        }
 
         console.log(`[COMMISSION] Created level ${entry.level} override: £${overrideCommissionAmount} (${overridePercentage * 100}%) for user ${entry.parentId}`);
       }
