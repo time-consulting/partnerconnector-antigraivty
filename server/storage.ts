@@ -3522,6 +3522,19 @@ export class DatabaseStorage implements IStorage {
     });
     approvals.push(creatorApproval);
 
+    // ✅ FIX: Also create commission payment record so it appears in withdrawal section
+    await this.createCommissionPayment({
+      dealId,
+      recipientId: dealCreatorId,
+      level: 0,
+      amount: creatorCommissionAmount.toFixed(2),
+      percentage: '60.00',
+      totalCommission: totalCommission.toString(),
+      businessName: clientBusinessName,
+      paymentStatus: 'approved',  // Ready for withdrawal
+      approvalStatus: 'approved',
+    });
+
     console.log(`[COMMISSION] Created direct commission: £${creatorCommissionAmount} (60%) for user ${dealCreatorId}`);
 
     // 2. Get upline from partner_hierarchy
@@ -3588,6 +3601,19 @@ export class DatabaseStorage implements IStorage {
           ratesData: ratesData ? JSON.stringify(ratesData) : null,
         });
         approvals.push(overrideApproval);
+
+        // ✅ FIX: Also create commission payment record so it appears in withdrawal section
+        await this.createCommissionPayment({
+          dealId,
+          recipientId: entry.parentId,
+          level: entry.level,
+          amount: overrideCommissionAmount.toFixed(2),
+          percentage: (overridePercentage * 100).toFixed(2),
+          totalCommission: totalCommission.toString(),
+          businessName: clientBusinessName,
+          paymentStatus: 'approved',  // Ready for withdrawal
+          approvalStatus: 'approved',
+        });
 
         console.log(`[COMMISSION] Created level ${entry.level} override: £${overrideCommissionAmount} (${overridePercentage * 100}%) for user ${entry.parentId}`);
       }
