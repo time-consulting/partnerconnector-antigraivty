@@ -69,8 +69,12 @@ export function AdminPaymentsPortal() {
 
   // Approve payment mutation (for needs_approval payments)
   const approveMutation = useMutation({
-    mutationFn: async (paymentId: string) => {
-      const response = await apiRequest('POST', `/api/admin/payments/${paymentId}/approve`, {});
+    mutationFn: async (payment: any) => {
+      const response = await apiRequest('POST', `/api/admin/referrals/${payment.dealId}/create-commission-approval`, {
+        actualCommission: payment.totalCommission || payment.grossAmount,
+        adminNotes: null,
+        ratesData: null
+      });
       return response;
     },
     onSuccess: () => {
@@ -187,7 +191,7 @@ export function AdminPaymentsPortal() {
       setCalculatedBreakdown(null);
       setShowConfirmation(false);
       setManualOverrides({});
-      
+
       toast({
         title: data.success ? "Payments Processed" : "Partial Success",
         description: data.message,
@@ -290,7 +294,7 @@ export function AdminPaymentsPortal() {
 
   const getTotalDistributed = () => {
     if (!calculatedBreakdown) return "0.00";
-    
+
     let total = 0;
     calculatedBreakdown.breakdown.forEach((item: any, index: number) => {
       const amount = manualOverrides[index] ? parseFloat(manualOverrides[index]) : parseFloat(item.amount);
@@ -316,14 +320,14 @@ export function AdminPaymentsPortal() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div 
+      <div
         className="p-6 rounded-xl"
         style={{ background: cardBg, border: `1px solid ${cardBorder}` }}
       >
         <div className="flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <div 
+              <div
                 className="w-10 h-10 rounded-lg flex items-center justify-center"
                 style={{ background: 'rgba(34, 211, 238, 0.15)', color: cyanAccent }}
               >
@@ -346,7 +350,7 @@ export function AdminPaymentsPortal() {
 
       {/* Needs Approval Queue - Commission Payments from LIVE deals */}
       {!needsApprovalLoading && needsApprovalPayments.length > 0 && (
-        <div 
+        <div
           className="p-6 rounded-xl"
           style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderLeft: '4px solid #f59e0b' }}
         >
@@ -381,13 +385,13 @@ export function AdminPaymentsPortal() {
                         Needs Approval
                       </Badge>
                     </div>
-                    
+
                     {/* Evidence Link */}
                     {payment.evidenceUrl && (
                       <div className="mt-2">
-                        <a 
-                          href={payment.evidenceUrl} 
-                          target="_blank" 
+                        <a
+                          href={payment.evidenceUrl}
+                          target="_blank"
                           rel="noopener noreferrer"
                           className="text-sm hover:underline"
                           style={{ color: cyanAccent }}
@@ -396,7 +400,7 @@ export function AdminPaymentsPortal() {
                         </a>
                       </div>
                     )}
-                    
+
                     {/* Commission Splits Preview */}
                     {payment.splits && payment.splits.length > 0 && (
                       <div className="mt-3 pt-3" style={{ borderTop: `1px solid ${cardBorder}` }}>
@@ -415,21 +419,21 @@ export function AdminPaymentsPortal() {
                         </div>
                       </div>
                     )}
-                    
+
                     {/* Audit Info */}
                     <div className="mt-2 text-xs" style={{ color: '#4b5563' }}>
                       Created by: {payment.createdByName || "System"} on {payment.createdAt ? new Date(payment.createdAt).toLocaleDateString() : "N/A"}
                     </div>
                   </div>
-                  
+
                   <div className="text-right ml-4">
                     <div className="text-2xl font-bold" style={{ color: '#fbbf24' }}>
                       {payment.currency || 'GBP'} {parseFloat(payment.grossAmount || payment.totalCommission || payment.amount).toFixed(2)}
                     </div>
                     <div className="text-xs mb-3" style={{ color: '#6b7280' }}>Gross Commission</div>
-                    
+
                     <Button
-                      onClick={() => approveMutation.mutate(payment.id)}
+                      onClick={() => approveMutation.mutate(payment)}
                       disabled={approveMutation.isPending}
                       style={{ background: '#0891b2', color: '#ffffff' }}
                       className="hover:opacity-90"
@@ -467,7 +471,7 @@ export function AdminPaymentsPortal() {
 
       {/* Approved Payments Ready for Withdrawal */}
       {!approvedLoading && approvedPayments.length > 0 && (
-        <div 
+        <div
           className="p-6 rounded-xl"
           style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderLeft: `4px solid ${cyanAccent}` }}
         >
@@ -546,7 +550,7 @@ export function AdminPaymentsPortal() {
 
       {/* Live Accounts Grid */}
       {liveAccounts.length === 0 ? (
-        <div 
+        <div
           className="p-12 text-center rounded-xl"
           style={{ background: cardBg, border: `1px solid ${cardBorder}` }}
         >
@@ -557,8 +561,8 @@ export function AdminPaymentsPortal() {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {liveAccounts.map((account: any) => (
-            <div 
-              key={account.id} 
+            <div
+              key={account.id}
               className="overflow-hidden rounded-xl"
               style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderLeft: `4px solid ${cyanAccent}` }}
               data-testid={`card-payment-${account.id}`}
@@ -592,9 +596,9 @@ export function AdminPaymentsPortal() {
                     </div>
                   </div>
                 </div>
-                
+
                 {/* Upline Structure */}
-                <div 
+                <div
                   className="mb-4 p-3 rounded-lg"
                   style={{ background: darkBg, border: `1px solid ${cardBorder}` }}
                 >
@@ -612,7 +616,7 @@ export function AdminPaymentsPortal() {
                       </span>
                       <span style={{ color: '#4b5563' }}>({account.user?.email})</span>
                     </div>
-                    
+
                     {/* Level 2 - Parent */}
                     {account.uplineUsers && account.uplineUsers.length > 0 && (
                       <div className="flex items-center gap-2 text-xs pl-4">
@@ -625,7 +629,7 @@ export function AdminPaymentsPortal() {
                         <span style={{ color: '#4b5563' }}>({account.uplineUsers[0].email})</span>
                       </div>
                     )}
-                    
+
                     {/* Level 3 - Grandparent */}
                     {account.uplineUsers && account.uplineUsers.length > 1 && (
                       <div className="flex items-center gap-2 text-xs pl-8">
@@ -685,7 +689,7 @@ export function AdminPaymentsPortal() {
           setCalculatedBreakdown(null);
         }
       }}>
-        <DialogContent 
+        <DialogContent
           className="max-w-2xl max-h-[90vh] overflow-y-auto"
           style={{ background: cardBg, border: `1px solid ${cardBorder}` }}
         >
@@ -739,27 +743,27 @@ export function AdminPaymentsPortal() {
 
             {/* Commission Breakdown */}
             {calculatedBreakdown && (
-              <div 
+              <div
                 className="space-y-3 p-4 rounded-xl"
                 style={{ background: darkBg, border: `1px solid ${cardBorder}` }}
               >
                 <h4 className="font-semibold" style={{ color: '#ffffff' }}>Commission Breakdown</h4>
-                
+
                 {calculatedBreakdown.breakdown.map((item: any, index: number) => (
-                  <div 
-                    key={index} 
+                  <div
+                    key={index}
                     className="p-4 rounded-lg"
                     style={{ background: cardBg, border: `1px solid ${cardBorder}` }}
                   >
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <Badge 
+                          <Badge
                             className="text-xs"
                             style={
                               item.level === 1 ? { background: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246, 0.5)' } :
-                              item.level === 2 ? { background: 'rgba(168, 85, 247, 0.2)', color: '#c084fc', border: '1px solid rgba(168, 85, 247, 0.5)' } :
-                              { background: 'rgba(99, 102, 241, 0.2)', color: '#a5b4fc', border: '1px solid rgba(99, 102, 241, 0.5)' }
+                                item.level === 2 ? { background: 'rgba(168, 85, 247, 0.2)', color: '#c084fc', border: '1px solid rgba(168, 85, 247, 0.5)' } :
+                                  { background: 'rgba(99, 102, 241, 0.2)', color: '#a5b4fc', border: '1px solid rgba(99, 102, 241, 0.5)' }
                             }
                           >
                             Level {item.level}
@@ -776,7 +780,7 @@ export function AdminPaymentsPortal() {
                           </div>
                         </div>
                       </div>
-                      
+
                       {/* Manual Override Input */}
                       <div>
                         <Label htmlFor={`override-${index}`} className="text-xs" style={{ color: '#6b7280' }}>
@@ -871,13 +875,13 @@ export function AdminPaymentsPortal() {
               to <strong style={{ color: '#ffffff' }}>{calculatedBreakdown?.breakdown.length}</strong> recipients.
               {Object.keys(manualOverrides).length > 0 && (
                 <>
-                  <br/><br/>
+                  <br /><br />
                   <span className="font-semibold" style={{ color: '#fbbf24' }}>
                     Manual overrides have been applied to {Object.keys(manualOverrides).length} payment(s)
                   </span>
                 </>
               )}
-              <br/><br/>
+              <br /><br />
               This action cannot be undone. The payments will be recorded and ready for bank transfer.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -899,7 +903,7 @@ export function AdminPaymentsPortal() {
 
       {/* Withdrawal Confirmation Dialog */}
       <Dialog open={withdrawDialogOpen} onOpenChange={setWithdrawDialogOpen}>
-        <DialogContent 
+        <DialogContent
           className="sm:max-w-[500px]"
           style={{ background: cardBg, border: `1px solid ${cardBorder}` }}
         >
@@ -912,10 +916,10 @@ export function AdminPaymentsPortal() {
               Mark this commission payment as paid and provide optional transfer reference
             </DialogDescription>
           </DialogHeader>
-          
+
           {selectedPayment && (
             <div className="space-y-4 py-4">
-              <div 
+              <div
                 className="p-4 space-y-2 rounded-xl"
                 style={{ background: darkBg, border: `1px solid ${cardBorder}` }}
               >
