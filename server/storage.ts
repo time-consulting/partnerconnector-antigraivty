@@ -2239,9 +2239,12 @@ export class DatabaseStorage implements IStorage {
     clicked: number;
     registered: number;
     active: number;
+    inactive: number;
+    teamMembers: number;
   }> {
     // Efficient SQL: Single query with aggregations
     // Active = has at least one approved deal in the last 6 months
+    // Inactive = had approved deals but none in last 6 months (churn tracking)
     // Approval check: status OR dealStage indicates approval or beyond
     const stats = await db
       .select({
@@ -2256,12 +2259,29 @@ export class DatabaseStorage implements IStorage {
               OR ${deals.dealStage} IN ('approved', 'live_confirm_ltr', 'invoice_received', 'completed')
             )
             AND ${deals.submittedAt} >= NOW() - INTERVAL '6 months'
+        ) THEN 1 END)`,
+        // Inactive = had approved deals but none in last 6 months
+        inactive: sql<number>`COUNT(CASE WHEN EXISTS (
+          SELECT 1 FROM ${deals}
+          WHERE ${deals.referrerId} = ${users.id}
+            AND (
+              ${deals.status} IN ('approved', 'live', 'completed')
+              OR ${deals.dealStage} IN ('approved', 'live_confirm_ltr', 'invoice_received', 'completed')
+            )
+        ) AND NOT EXISTS (
+          SELECT 1 FROM ${deals}
+          WHERE ${deals.referrerId} = ${users.id}
+            AND (
+              ${deals.status} IN ('approved', 'live', 'completed')
+              OR ${deals.dealStage} IN ('approved', 'live_confirm_ltr', 'invoice_received', 'completed')
+            )
+            AND ${deals.submittedAt} >= NOW() - INTERVAL '6 months'
         ) THEN 1 END)`
       })
       .from(users)
       .where(eq(users.parentPartnerId, userId));
 
-    const result = stats[0] || { total: 0, registered: 0, active: 0 };
+    const result = stats[0] || { total: 0, registered: 0, active: 0, inactive: 0 };
 
     return {
       sent: result.total,
@@ -2269,7 +2289,8 @@ export class DatabaseStorage implements IStorage {
       clicked: result.registered,
       registered: result.registered,
       active: result.active,
-      teamMembers: result.total  // Total count of team members
+      inactive: result.inactive,
+      teamMembers: result.total
     };
   }
 
@@ -2333,6 +2354,66 @@ export class DatabaseStorage implements IStorage {
         hasSubmittedDeals: member.totalDeals
       };
     });
+  }
+
+  // Admin-level: Get stats for ALL users (not just team members)
+  // Used for platform-wide churn analytics
+  async getAllUsersStats(): Promise<{
+    totalUsers: number;
+    active: number;
+    inactive: number;
+    registered: number;
+  }> {
+    const stats = await db
+      .select({
+        total: sql<number>`COUNT(*)`,
+        // Active = has approved deal in last 6 months
+        active: sql<number>`COUNT(CASE WHEN EXISTS (
+          SELECT 1 FROM ${deals}
+          WHERE ${deals.referrerId} = ${users.id}
+            AND (
+              ${deals.status} IN ('approved', 'live', 'completed')
+              OR ${deals.dealStage} IN ('approved', 'live_confirm_ltr', 'invoice_received', 'completed')
+            )
+            AND ${deals.submittedAt} >= NOW() - INTERVAL '6 months'
+        ) THEN 1 END)`,
+        // Inactive = had approved deals but none in last 6 months
+        inactive: sql<number>`COUNT(CASE WHEN EXISTS (
+          SELECT 1 FROM ${deals}
+          WHERE ${deals.referrerId} = ${users.id}
+            AND (
+              ${deals.status} IN ('approved', 'live', 'completed')
+              OR ${deals.dealStage} IN ('approved', 'live_confirm_ltr', 'invoice_received', 'completed')
+            )
+        ) AND NOT EXISTS (
+          SELECT 1 FROM ${deals}
+          WHERE ${deals.referrerId} = ${users.id}
+            AND (
+              ${deals.status} IN ('approved', 'live', 'completed')
+              OR ${deals.dealStage} IN ('approved', 'live_confirm_ltr', 'invoice_received', 'completed')
+            )
+            AND ${deals.submittedAt} >= NOW() - INTERVAL '6 months'
+        ) THEN 1 END)`,
+        // Registered = never had an approved deal
+        registered: sql<number>`COUNT(CASE WHEN NOT EXISTS (
+          SELECT 1 FROM ${deals}
+          WHERE ${deals.referrerId} = ${users.id}
+            AND (
+              ${deals.status} IN ('approved', 'live', 'completed')
+              OR ${deals.dealStage} IN ('approved', 'live_confirm_ltr', 'invoice_received', 'completed')
+            )
+        ) THEN 1 END)`
+      })
+      .from(users);
+
+    const result = stats[0] || { total: 0, active: 0, inactive: 0, registered: 0 };
+
+    return {
+      totalUsers: result.total,
+      active: result.active,
+      inactive: result.inactive,
+      registered: result.registered
+    };
   }
 
   async getTeamHierarchy(userId: string): Promise<any[]> {
