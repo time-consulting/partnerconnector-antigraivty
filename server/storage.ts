@@ -3192,7 +3192,7 @@ export class DatabaseStorage implements IStorage {
       .select({
         id: quoteBillUploads.id,
         quoteId: quoteBillUploads.quoteId,
-        dealId: quoteBillUploads.dealId,
+        dealId: quoteBillUploads.referralId,
         fileName: quoteBillUploads.fileName,
         fileSize: quoteBillUploads.fileSize,
         fileType: quoteBillUploads.fileType,
@@ -3430,21 +3430,21 @@ export class DatabaseStorage implements IStorage {
       const commissionApprovalsData = insertedReferrals
         .filter(r => r.status === 'paid' && r.actualCommission)
         .map(referral => ({
-          dealId: deal.id,
+          dealId: referral.id,
           userId: testUser.id,
-          commissionAmount: deal.actualCommission!,
-          clientBusinessName: deal.businessName,
+          commissionAmount: referral.actualCommission!,
+          clientBusinessName: referral.businessName,
           approvalStatus: 'approved' as const,
           approvedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
           paymentStatus: 'completed' as const,
           paymentDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
           paymentReference: `PAY-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
           adminNotes: 'Commission processed via automated system',
-          ratesData: {
-            baseCommission: deal.actualCommission,
+          ratesData: JSON.stringify({
+            baseCommission: referral.actualCommission,
             commissionRate: '60%',
             level: 1
-          }
+          })
         }));
 
       if (commissionApprovalsData.length > 0) {
@@ -3513,7 +3513,7 @@ export class DatabaseStorage implements IStorage {
     const creatorApproval = await this.createCommissionApproval({
       dealId,
       userId: dealCreatorId,
-      commissionAmount: creatorCommissionAmount,
+      commissionAmount: creatorCommissionAmount.toFixed(2),
       clientBusinessName,
       commissionType: 'direct',  // Direct commission
       level: 0,  // Deal creator = level 0
@@ -3580,7 +3580,7 @@ export class DatabaseStorage implements IStorage {
         const overrideApproval = await this.createCommissionApproval({
           dealId,
           userId: entry.parentId,
-          commissionAmount: overrideCommissionAmount,
+          commissionAmount: overrideCommissionAmount.toFixed(2),
           clientBusinessName,
           commissionType: 'override',  // Override commission
           level: entry.level,
@@ -3804,7 +3804,7 @@ export class DatabaseStorage implements IStorage {
         paymentStatus: 'paid', // Immediately paid since this is the "mark paid" flow
         approvalStatus: 'approved',
         paymentDate: new Date(),
-        paymentReference: `${paymentReference}-L${i}`,
+        transferReference: `${paymentReference}-L${i}`,
         notes: `Paid via ${paymentMethod} (Level ${i} - ${tier.percentage}%)`
       });
 
@@ -3989,7 +3989,7 @@ export class DatabaseStorage implements IStorage {
     return { children, parents, level };
   }
 
-  async getDealsByLevel(userId: string): Promise<{ [key: number]: Referral[] }> {
+  async getDealsByLevel(userId: string): Promise<{ [key: number]: Deal[] }> {
     const allDeals = await db
       .select()
       .from(deals)
@@ -3997,7 +3997,7 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(deals.submittedAt));
 
     // Group referrals by level
-    const referralsByLevel: { [key: number]: Referral[] } = { 1: [], 2: [], 3: [] };
+    const referralsByLevel: { [key: number]: Deal[] } = { 1: [], 2: [], 3: [] };
 
     allDeals.forEach(deal => {
       const level = deal.referralLevel || 1;
