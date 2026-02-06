@@ -52,6 +52,7 @@ export const users: any = pgTable("users", {
   partnerId: varchar("partner_id").unique(),
   parentPartnerId: varchar("parent_partner_id").references((): any => users.id, { onDelete: "set null" }), // For MLM structure
   referralCode: varchar("referral_code").unique(),
+  signupSource: varchar("signup_source").default("direct"), // 'direct' or 'referral' - tracks how user joined
   partnerLevel: integer("partner_level").default(1), // 1, 2, 3 for commission tiers
   // Team management
   teamRole: varchar("team_role").default("member"), // owner, admin, manager, member

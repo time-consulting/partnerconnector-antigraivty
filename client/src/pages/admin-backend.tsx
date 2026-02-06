@@ -208,6 +208,11 @@ function UserCard({ user }: { user: any }) {
                 {user.isAdmin && <Badge className="bg-purple-500">Admin</Badge>}
                 {user.emailVerified && <Badge variant="outline">Verified</Badge>}
                 {user.hasCompletedOnboarding && <Badge variant="secondary">Onboarded</Badge>}
+                {user.signupSource && (
+                  <Badge variant={user.signupSource === 'referral' ? 'default' : 'secondary'}>
+                    {user.signupSource === 'referral' ? '🔗 Team Invite' : '📝 Direct Signup'}
+                  </Badge>
+                )}
               </div>
               <div className="flex gap-2">
                 <Button

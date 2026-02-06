@@ -396,6 +396,7 @@ export class DatabaseStorage implements IStorage {
       passwordHash,
       emailVerified,
       verificationToken,
+      signupSource: referralCode ? 'referral' : 'direct', // Track signup source
       ...userData,
     }).returning();
 
