@@ -4,8 +4,10 @@
  */
 
 import { db } from './server/db';
-import { users, deals } from '@shared/schema';
-import { eq, sql } from 'drizzle-orm';
+import * as schema from '@shared/schema';
+import { eq, sql, and } from 'drizzle-orm';
+
+const { users, deals } = schema;
 
 async function diagnoseActivePartners() {
     console.log('🔍 DIAGNOSING ACTIVE PARTNERS\n');

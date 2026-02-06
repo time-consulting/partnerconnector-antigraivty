@@ -3525,11 +3525,44 @@ export class DatabaseStorage implements IStorage {
     console.log(`[COMMISSION] Created direct commission: £${creatorCommissionAmount} (60%) for user ${dealCreatorId}`);
 
     // 2. Get upline from partner_hierarchy
-    const uplineEntries = await db
+    let uplineEntries = await db
       .select()
       .from(partnerHierarchy)
       .where(eq(partnerHierarchy.childId, dealCreatorId))
       .orderBy(partnerHierarchy.level);
+
+    // FALLBACK: If hierarchy is empty, walk manual chain
+    if (uplineEntries.length === 0) {
+      console.log(`[COMMISSION] Hierarchy empty for user ${dealCreatorId}, walking manual chain for Deal ${dealId}`);
+      let currentUserId = dealCreatorId;
+      let level = 1;
+
+      // We only go up 2 levels (Level 1 and Level 2 overrides)
+      while (currentUserId && level <= 2) {
+        const user = await this.getUser(currentUserId);
+
+        if (user && user.parentPartnerId) {
+          // Found a parent! Add to entries
+          // We cast to any to avoid strict type checks since we only need these fields
+          uplineEntries.push({
+            id: 0, // Mock ID
+            childId: dealCreatorId,
+            parentId: user.parentPartnerId,
+            level: level,
+            createdAt: new Date()
+          } as any);
+
+          console.log(`[COMMISSION] Found manual upline: Level ${level} -> User ${user.parentPartnerId}`);
+
+          // Move up
+          currentUserId = user.parentPartnerId;
+          level++;
+        } else {
+          // End of chain
+          break;
+        }
+      }
+    }
 
     // 3. Create override commissions for upline
     for (const entry of uplineEntries) {
@@ -3757,6 +3790,25 @@ export class DatabaseStorage implements IStorage {
           commissionType: i === 0 ? 'direct' : 'override'
         }
       });
+
+      // ✅ CRITICAL FIX: Also create the Payment Record so it shows up in the User Dashboard!
+      // The dashboard reads from commission_payments table, not commission_approvals.
+      await this.createCommissionPayment({
+        dealId,
+        recipientId: currentUserId,
+        level: i, // 0=Direct, 1=L1 Override, 2=L2 Override
+        amount: commissionAmount.toFixed(2),
+        percentage: tier.percentage.toFixed(2),
+        totalCommission: totalCommission.toString(),
+        businessName,
+        paymentStatus: 'paid', // Immediately paid since this is the "mark paid" flow
+        approvalStatus: 'approved',
+        paymentDate: new Date(),
+        paymentReference: `${paymentReference}-L${i}`,
+        notes: `Paid via ${paymentMethod} (Level ${i} - ${tier.percentage}%)`
+      });
+
+      console.log(`[COMMISSION] Created payment record for Level ${i}: £${commissionAmount} for User ${currentUserId}`);
 
       createdApprovals.push(approval);
 
