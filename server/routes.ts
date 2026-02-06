@@ -16,7 +16,7 @@ import { logAudit } from "./logger";
 import { wsManager } from "./websocket";
 import { pushNotificationService } from "./push-notifications";
 import Stripe from 'stripe';
-import { eq, desc, and, gte, lte } from "drizzle-orm";
+import { eq, desc, and, gte, lte, sql } from "drizzle-orm";
 import { db } from "./db";
 
 const upload = multer({
@@ -2192,6 +2192,120 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching progression data:", error);
       res.status(500).json({ message: "Failed to fetch progression data" });
+    }
+  });
+
+  // 🔍 DEBUG ENDPOINT: User Referral Relationships
+  // Temporary endpoint to verify referral linking
+  app.get('/api/debug/user-referrals/:userId', requireAuth, async (req: any, res) => {
+    try {
+      const { userId } = req.params;
+
+      // Get the target user's details
+      const [targetUser] = await db.execute(sql`
+        SELECT 
+          id, 
+          email, 
+          first_name, 
+          last_name,
+          partner_id,
+          referral_code, 
+          parent_partner_id
+        FROM users 
+        WHERE id = ${userId}
+      `);
+
+      if (!targetUser.rows || targetUser.rows.length === 0) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      const user = targetUser.rows[0];
+
+      // Get who referred this user (parent)
+      let referredBy = null;
+      if (user.parent_partner_id) {
+        const [parentUser] = await db.execute(sql`
+          SELECT id, email, first_name, last_name, partner_id, referral_code
+          FROM users 
+          WHERE id = ${user.parent_partner_id}
+        `);
+        if (parentUser.rows && parentUser.rows.length > 0) {
+          referredBy = parentUser.rows[0];
+        }
+      }
+
+      // Get all users referred BY this user (children)
+      const referrals = await db.execute(sql`
+        SELECT 
+          id, 
+          email, 
+          first_name, 
+          last_name,
+          partner_id,
+          referral_code,
+          created_at,
+          (SELECT COUNT(*) 
+           FROM deals 
+           WHERE referrer_id = users.id 
+             AND (status IN ('approved', 'live', 'completed')
+                  OR deal_stage IN ('approved', 'live_confirm_ltr', 'invoice_received', 'completed'))
+          ) as approved_deals_count,
+          (SELECT COUNT(*) 
+           FROM deals 
+           WHERE referrer_id = users.id 
+             AND (status IN ('approved', 'live', 'completed')
+                  OR deal_stage IN ('approved', 'live_confirm_ltr', 'invoice_received', 'completed'))
+             AND submitted_at >= NOW() - INTERVAL '6 months'
+          ) as recent_approved_deals
+        FROM users 
+        WHERE parent_partner_id = ${userId}
+        ORDER BY created_at DESC
+      `);
+
+      // Calculate status for each referral
+      const referralsList = referrals.rows.map((r: any) => ({
+        id: r.id,
+        email: r.email,
+        name: `${r.first_name} ${r.last_name}`,
+        partnerId: r.partner_id,
+        referralCode: r.referral_code,
+        joinedAt: r.created_at,
+        approvedDealsAllTime: Number(r.approved_deals_count),
+        recentApprovedDeals: Number(r.recent_approved_deals),
+        status: Number(r.recent_approved_deals) > 0
+          ? 'active'
+          : Number(r.approved_deals_count) > 0
+            ? 'inactive'
+            : 'registered'
+      }));
+
+      res.json({
+        user: {
+          id: user.id,
+          email: user.email,
+          name: `${user.first_name} ${user.last_name}`,
+          partnerId: user.partner_id,
+          referralCode: user.referral_code,
+          parentPartnerId: user.parent_partner_id
+        },
+        referredBy: referredBy ? {
+          id: referredBy.id,
+          email: referredBy.email,
+          name: `${referredBy.first_name} ${referredBy.last_name}`,
+          partnerId: referredBy.partner_id,
+          referralCode: referredBy.referral_code
+        } : null,
+        referrals: referralsList,
+        summary: {
+          totalReferrals: referralsList.length,
+          activeReferrals: referralsList.filter((r: any) => r.status === 'active').length,
+          inactiveReferrals: referralsList.filter((r: any) => r.status === 'inactive').length,
+          registeredOnlyReferrals: referralsList.filter((r: any) => r.status === 'registered').length
+        }
+      });
+    } catch (error) {
+      console.error('Debug endpoint error:', error);
+      res.status(500).json({ error: 'Failed to fetch referral data' });
     }
   });
 
