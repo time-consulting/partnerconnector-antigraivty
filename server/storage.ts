@@ -2241,15 +2241,21 @@ export class DatabaseStorage implements IStorage {
     active: number;
   }> {
     // Efficient SQL: Single query with aggregations
+    // Active = has at least one approved deal in the last 6 months
+    // Approval check: status OR dealStage indicates approval or beyond
     const stats = await db
       .select({
         total: sql<number>`COUNT(*)`,
         registered: sql<number>`COUNT(CASE WHEN ${users.partnerId} IS NOT NULL OR ${users.referralCode} IS NOT NULL THEN 1 END)`,
-        // Active = has at least one approved deal (status: approved, live, completed)
+        // Active = has approved deal in last 6 months
         active: sql<number>`COUNT(CASE WHEN EXISTS (
           SELECT 1 FROM ${deals}
           WHERE ${deals.referrerId} = ${users.id}
-            AND ${deals.status} IN ('approved', 'live', 'completed')
+            AND (
+              ${deals.status} IN ('approved', 'live', 'completed')
+              OR ${deals.dealStage} IN ('approved', 'live_confirm_ltr', 'invoice_received', 'completed')
+            )
+            AND ${deals.submittedAt} >= NOW() - INTERVAL '6 months'
         ) THEN 1 END)`
       })
       .from(users)
@@ -2287,7 +2293,16 @@ export class DatabaseStorage implements IStorage {
         partnerId: users.partnerId,
         referralCode: users.referralCode,
         totalDeals: sql<number>`COUNT(${deals.id})`,
-        approvedDeals: sql<number>`COUNT(CASE WHEN ${deals.status} IN ('approved', 'live', 'completed') THEN 1 END)`,
+        // Approved deals (any time)
+        approvedDealsAllTime: sql<number>`COUNT(CASE WHEN (
+          ${deals.status} IN ('approved', 'live', 'completed')
+          OR ${deals.dealStage} IN ('approved', 'live_confirm_ltr', 'invoice_received', 'completed')
+        ) THEN 1 END)`,
+        // Approved deals in last 6 months
+        approvedDealsRecent: sql<number>`COUNT(CASE WHEN (
+          ${deals.status} IN ('approved', 'live', 'completed')
+          OR ${deals.dealStage} IN ('approved', 'live_confirm_ltr', 'invoice_received', 'completed')
+        ) AND ${deals.submittedAt} >= NOW() - INTERVAL '6 months' THEN 1 END)`,
         hasChildren: sql<number>`(SELECT COUNT(*) FROM ${users} children WHERE children.parent_partner_id = ${users.id})`
       })
       .from(users)
@@ -2296,10 +2311,16 @@ export class DatabaseStorage implements IStorage {
       .groupBy(users.id, users.firstName, users.lastName, users.email, users.createdAt, users.partnerId, users.referralCode);
 
     return teamReferrals.map((member) => {
-      // Active status: has at least one approved deal
+      // 3-tier status system:
+      // 1. Active: Has approved deals in last 6 months
+      // 2. Inactive: Had approved deals but none in last 6 months
+      // 3. Registered: Never had an approved deal
       let status = 'registered';
-      if (member.approvedDeals > 0) {
+
+      if (member.approvedDealsRecent > 0) {
         status = 'active';
+      } else if (member.approvedDealsAllTime > 0) {
+        status = 'inactive'; // Was active but hasn't submitted in 6 months
       }
 
       return {
