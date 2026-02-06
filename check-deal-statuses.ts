@@ -11,7 +11,7 @@ async function checkDealStatuses() {
       d.id,
       d.business_name,
       d.status,
-      d.deal_amount,
+      d.quote_amount,
       d.created_at,
       u.email as referrer_email
     FROM deals d
@@ -25,7 +25,7 @@ async function checkDealStatuses() {
   result.rows.forEach((deal, i) => {
     console.log(`[${i + 1}] ${deal.business_name}`);
     console.log(`    Status: "${deal.status}" ${deal.status === 'approved' ? '✅' : '❌'}`);
-    console.log(`    Amount: $${deal.deal_amount}`);
+    console.log(`    Quote: $${deal.quote_amount || '0'}`);
     console.log(`    Created: ${deal.created_at}`);
     console.log(`    ID: ${deal.id}\n`);
   });
