@@ -6808,9 +6808,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         amount: grossAmountNum * 0.60
       });
 
+      console.log(`[CREATE-COMMISSION] Referrer ${deal.referrerId} parentPartnerId=${referrer.parentPartnerId || 'NULL'}`);
+
       // Level 1: First upline gets 20% (if exists)
       if (referrer.parentPartnerId) {
         const upline1 = await storage.getUser(referrer.parentPartnerId);
+        console.log(`[CREATE-COMMISSION] Level 1 upline found: ${upline1 ? upline1.id : 'NULL'} (parentPartnerId=${referrer.parentPartnerId})`);
         if (upline1) {
           splits.push({
             userId: upline1.id,
@@ -6820,8 +6823,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
 
           // Level 2: Second upline gets 10% (if exists)
+          console.log(`[CREATE-COMMISSION] Upline1 ${upline1.id} parentPartnerId=${upline1.parentPartnerId || 'NULL'}`);
           if (upline1.parentPartnerId) {
             const upline2 = await storage.getUser(upline1.parentPartnerId);
+            console.log(`[CREATE-COMMISSION] Level 2 upline found: ${upline2 ? upline2.id : 'NULL'}`);
             if (upline2) {
               splits.push({
                 userId: upline2.id,
@@ -6832,7 +6837,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
         }
+      } else {
+        console.log(`[CREATE-COMMISSION] ⚠️ No parentPartnerId on referrer — only Level 0 split will be created`);
       }
+
+      console.log(`[CREATE-COMMISSION] Total splits: ${splits.length} — Levels: ${splits.map(s => `L${s.level}:${s.percentage}%`).join(', ')}`);
 
       // Create the main commission payment record
       const paymentRecord = await storage.createCommissionPayment({
@@ -6993,6 +7002,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // ===== NEW DEAL FLOW: Splits already exist =====
         // Mark parent as 'distributed', then create individual commissionPayments per split
         console.log(`[APPROVE-V5] New deal flow: expanding ${existingSplits.length} splits into individual payment records`);
+        console.log(`[APPROVE-V5] Split levels: ${existingSplits.map(s => `L${s.level}`).join(', ')}`);
+
+        // Check if upline splits are missing (only Level 0 exists)
+        const hasLevel1 = existingSplits.some(s => s.level === 1);
+        const hasLevel2 = existingSplits.some(s => s.level === 2);
+        const grossAmount = parseFloat(payment.grossAmount || payment.totalCommission || payment.amount || '0');
+
+        if (!hasLevel1 || !hasLevel2) {
+          console.log(`[APPROVE-V5] ⚠️ Missing upline splits! hasL1=${hasLevel1}, hasL2=${hasLevel2}. Discovering upline...`);
+
+          // Walk the parentPartnerId chain to find missing upline
+          const referrer = await storage.getUser(payment.recipientId);
+          if (referrer?.parentPartnerId) {
+            const upline1 = await storage.getUser(referrer.parentPartnerId);
+            if (upline1 && !hasLevel1) {
+              console.log(`[APPROVE-V5] Found missing Level 1 upline: ${upline1.id}`);
+              const l1Amount = (grossAmount * 0.20).toFixed(2);
+              // Insert missing split
+              await db.insert(paymentSplits).values({
+                paymentId: paymentId,
+                dealId: payment.dealId,
+                beneficiaryUserId: upline1.id,
+                level: 1,
+                percentage: '20.00',
+                amount: l1Amount,
+                status: 'pending',
+              });
+              existingSplits.push({
+                id: 'generated-l1',
+                paymentId: paymentId,
+                dealId: payment.dealId,
+                beneficiaryUserId: upline1.id,
+                level: 1,
+                percentage: '20.00',
+                amount: l1Amount,
+                status: 'pending',
+                createdAt: new Date(),
+              } as any);
+            }
+
+            if (upline1?.parentPartnerId && !hasLevel2) {
+              const upline2 = await storage.getUser(upline1.parentPartnerId);
+              if (upline2) {
+                console.log(`[APPROVE-V5] Found missing Level 2 upline: ${upline2.id}`);
+                const l2Amount = (grossAmount * 0.10).toFixed(2);
+                await db.insert(paymentSplits).values({
+                  paymentId: paymentId,
+                  dealId: payment.dealId,
+                  beneficiaryUserId: upline2.id,
+                  level: 2,
+                  percentage: '10.00',
+                  amount: l2Amount,
+                  status: 'pending',
+                });
+                existingSplits.push({
+                  id: 'generated-l2',
+                  paymentId: paymentId,
+                  dealId: payment.dealId,
+                  beneficiaryUserId: upline2.id,
+                  level: 2,
+                  percentage: '10.00',
+                  amount: l2Amount,
+                  status: 'pending',
+                  createdAt: new Date(),
+                } as any);
+              }
+            }
+          } else {
+            console.log(`[APPROVE-V5] Referrer ${payment.recipientId} has no parentPartnerId — no upline available`);
+          }
+          console.log(`[APPROVE-V5] After upline discovery: ${existingSplits.length} total splits`);
+        }
 
         // 1. Mark the parent payment as 'distributed' — removes it from pending list
         await db
