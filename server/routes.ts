@@ -6457,7 +6457,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         action: 'update_referral_stage',
         entityType: 'referral',
         entityId: dealId,
-        details: {
+        metadata: {
           oldStage: updatedReferral.status,
           newStage: stage,
           notes: notes || null
@@ -6657,7 +6657,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           action: 'process_stripe_payment',
           entityType: 'payment',
           entityId: dealId,
-          details: {
+          metadata: {
             recipientId,
             amount: parseFloat(amount),
             stripeTransferId: transfer.id,
@@ -6724,7 +6724,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         action: 'process_manual_payment',
         entityType: 'payment',
         entityId: dealId,
-        details: {
+        metadata: {
           recipientId,
           amount: parseFloat(amount),
           paymentMethod: paymentMethod || 'Bank Transfer',
@@ -6875,7 +6875,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         action: 'create_commission',
         entityType: 'payment',
         entityId: paymentRecord.id,
-        details: {
+        metadata: {
           dealId,
           grossAmount: grossAmountNum,
           currency,
@@ -7020,7 +7020,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           action: 'approve_payment',
           entityType: 'payment',
           entityId: paymentId,
-          details: { dealId: payment.dealId, flow: 'new_deal_with_splits' },
+          metadata: { dealId: payment.dealId, flow: 'new_deal_with_splits' },
           ipAddress: req.ip,
           userAgent: req.get('User-Agent') || null
         });
@@ -7074,7 +7074,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           action: 'approve_payment',
           entityType: 'payment',
           entityId: paymentId,
-          details: { dealId: payment.dealId, flow: 'old_deal_distribute' },
+          metadata: { dealId: payment.dealId, flow: 'old_deal_distribute' },
           ipAddress: req.ip,
           userAgent: req.get('User-Agent') || null
         });
@@ -7198,7 +7198,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         action: 'mark_payment_paid',
         entityType: 'payment',
         entityId: paymentId,
-        details: {
+        metadata: {
           dealId: payment.dealId,
           grossAmount: payment.grossAmount,
           transferReference: transferReference || `PAY_${Date.now()}`
