@@ -72,29 +72,42 @@ export function AdminPaymentsPortal() {
     mutationFn: async (payment: any) => {
       console.log('[APPROVE] Payment object:', payment);
       console.log('[APPROVE] Deal ID:', payment.deal?.id);
+      console.log('[APPROVE] dealId field:', payment.dealId);
       console.log('[APPROVE] Business Name:', payment.businessName || payment.deal?.businessName);
       console.log('[APPROVE] Total Commission:', payment.totalCommission || payment.grossAmount);
 
       if (!payment.deal?.id) {
-        throw new Error('Deal ID not found in payment object');
+        const errorMsg = `Deal ID not found in payment object. Keys: ${Object.keys(payment).join(', ')}. dealId field: ${payment.dealId}`;
+        console.error('[APPROVE] ERROR:', errorMsg);
+        alert(`DEBUG ERROR: ${errorMsg}`);
+        throw new Error(errorMsg);
       }
 
-      const response = await apiRequest('POST', `/api/admin/referrals/${payment.deal.id}/create-commission-approval`, {
+      const url = `/api/admin/referrals/${payment.deal.id}/create-commission-approval`;
+      console.log('[APPROVE] Calling:', url);
+
+      const response = await apiRequest('POST', url, {
         actualCommission: payment.totalCommission || payment.grossAmount,
         adminNotes: null,
         ratesData: null
       });
-      return response;
+
+      const result = await response.json();
+      console.log('[APPROVE] Response:', result);
+      return result;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('[APPROVE] SUCCESS:', data);
       queryClient.invalidateQueries({ queryKey: ['/api/admin/payments/needs-approval'] });
       queryClient.invalidateQueries({ queryKey: ['/api/admin/commission-payments/approved'] });
       toast({
         title: "Payment Approved",
-        description: "Commission payment has been approved successfully.",
+        description: data?.message || "Commission payment has been approved successfully.",
       });
     },
     onError: (error: any) => {
+      console.error('[APPROVE] FAILED:', error);
+      alert(`APPROVE FAILED: ${error.message}`);
       toast({
         title: "Approval Failed",
         description: error.message || "Failed to approve payment",
@@ -330,7 +343,7 @@ export function AdminPaymentsPortal() {
     <div className="space-y-6">
       {/* Version Banner - update timestamp to verify deployment */}
       <div className="px-4 py-2 rounded-lg text-xs font-mono" style={{ background: 'rgba(34, 211, 238, 0.1)', border: '1px solid rgba(34, 211, 238, 0.3)', color: '#22d3ee' }}>
-        🚀 Payment Portal v2.2 — Last deploy: 11 Feb 2026 20:18 UTC — Fix: always clean pending records before guard check
+        🚀 Payment Portal v2.3 — Last deploy: 11 Feb 2026 20:31 UTC — DEBUG: alert popups on approve success/fail
       </div>
       {/* Header */}
       <div
