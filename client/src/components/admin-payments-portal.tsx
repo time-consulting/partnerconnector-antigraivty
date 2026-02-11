@@ -338,7 +338,7 @@ export function AdminPaymentsPortal() {
     <div className="space-y-6">
       {/* Version Banner - update timestamp to verify deployment */}
       <div className="px-4 py-2 rounded-lg text-xs font-mono" style={{ background: 'rgba(34, 211, 238, 0.1)', border: '1px solid rgba(34, 211, 238, 0.3)', color: '#22d3ee' }}>
-        🚀 Payment Portal v3.0 — Last deploy: 11 Feb 2026 20:50 UTC — REWIRED: Approve uses paymentId directly
+        🚀 Payment Portal v4.0 — Last deploy: 11 Feb 2026 21:10 UTC — FIX: handles new split-created deals + old deals
       </div>
       {/* Header */}
       <div

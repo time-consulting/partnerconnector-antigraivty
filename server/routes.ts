@@ -6948,10 +6948,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin: Approve a payment (and distribute commissions)
+  // Handles BOTH:
+  //   - Old deals: no pre-created splits → uses distributeCommissions
+  //   - New deals: has pre-created splits from create-commission → just updates statuses
   app.post('/api/admin/payments/:paymentId/approve', requireAuth, requireAdmin, auditAdminAction('approve_payment', 'payment'), async (req: any, res) => {
     try {
       const { paymentId } = req.params;
-      console.log(`[APPROVE-V3] Starting approval for payment ${paymentId}`);
+      console.log(`[APPROVE-V4] Starting approval for payment ${paymentId}`);
 
       const [payment] = await db
         .select()
@@ -6959,11 +6962,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .where(eq(commissionPayments.id, paymentId));
 
       if (!payment) {
-        console.log(`[APPROVE-V3] Payment ${paymentId} not found`);
+        console.log(`[APPROVE-V4] Payment ${paymentId} not found`);
         return res.status(404).json({ message: "Payment not found" });
       }
 
-      console.log(`[APPROVE-V3] Payment found: status=${payment.paymentStatus}, dealId=${payment.dealId}, totalCommission=${payment.totalCommission || payment.amount}`);
+      console.log(`[APPROVE-V4] Payment found: status=${payment.paymentStatus}, dealId=${payment.dealId}, totalCommission=${payment.totalCommission}, amount=${payment.amount}, grossAmount=${payment.grossAmount}`);
 
       if (payment.paymentStatus !== 'needs_approval') {
         return res.status(400).json({
@@ -6974,91 +6977,159 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get the deal for commission distribution
       const deal = await storage.getDealById(payment.dealId);
       if (!deal) {
-        console.log(`[APPROVE-V3] Deal ${payment.dealId} not found`);
+        console.log(`[APPROVE-V4] Deal ${payment.dealId} not found`);
         return res.status(404).json({ message: "Associated deal not found" });
       }
 
-      const totalCommission = parseFloat(payment.totalCommission || payment.amount || '0');
-      console.log(`[APPROVE-V3] Distributing commissions: totalCommission=${totalCommission}, referrerId=${deal.referrerId}, business=${deal.businessName}`);
-
-      // Step 1: Update the original payment to 'distributed' (removes from Pending AND Approved queues)
-      await db
-        .update(commissionPayments)
-        .set({
-          paymentStatus: 'distributed',
-          approvalStatus: 'approved',
-          approvedBy: req.user.id,
-          approvedAt: new Date(),
-          updatedAt: new Date(),
-        })
-        .where(eq(commissionPayments.id, paymentId));
-      console.log(`[APPROVE-V3] Updated payment ${paymentId} → distributed`);
-
-      // Step 2: Update all splits to approved
-      await db
-        .update(paymentSplits)
-        .set({ status: 'approved' })
+      // Check if splits already exist (new flow from create-commission route)
+      const existingSplits = await db
+        .select()
+        .from(paymentSplits)
         .where(eq(paymentSplits.paymentId, paymentId));
 
-      // Step 3: Distribute commissions (creates individual payment records with 'approved' status)
-      let approvals: any[] = [];
-      try {
-        approvals = await storage.distributeCommissions(
-          payment.dealId,
-          totalCommission,
-          deal.referrerId,
-          deal.businessName,
-          null, // adminNotes
-          null, // ratesData
-          req.user.id // approvedByAdminId
-        );
-        console.log(`[APPROVE-V3] Created ${approvals.length} commission approval(s)`);
-      } catch (distError: any) {
-        console.error(`[APPROVE-V3] Distribution error (non-fatal):`, distError.message);
-        // Non-fatal: the payment is still marked as distributed
-      }
+      console.log(`[APPROVE-V4] Found ${existingSplits.length} existing splits for this payment`);
 
-      // Step 4: Create notifications for all recipients
-      for (const approval of approvals) {
+      if (existingSplits.length > 0) {
+        // ===== NEW DEAL FLOW: Splits already exist =====
+        // Just update the payment and splits to 'approved' — no distribution needed
+        console.log(`[APPROVE-V4] New deal flow: updating existing payment + ${existingSplits.length} splits to approved`);
+
+        // Update the main payment to approved (NOT distributed — keep it simple)
+        await db
+          .update(commissionPayments)
+          .set({
+            paymentStatus: 'approved',
+            approvalStatus: 'approved',
+            approvedBy: req.user.id,
+            approvedAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .where(eq(commissionPayments.id, paymentId));
+
+        // Update all splits to approved
+        await db
+          .update(paymentSplits)
+          .set({ status: 'approved' })
+          .where(eq(paymentSplits.paymentId, paymentId));
+
+        console.log(`[APPROVE-V4] Updated payment ${paymentId} and ${existingSplits.length} splits → approved`);
+
+        // Create audit log
+        await storage.createAdminAuditLog({
+          actorId: req.user.id,
+          action: 'approve_payment',
+          entityType: 'payment',
+          entityId: paymentId,
+          details: { dealId: payment.dealId, flow: 'new_deal_with_splits' },
+          ipAddress: req.ip,
+          userAgent: req.get('User-Agent') || null
+        });
+
+        return res.json({
+          success: true,
+          message: `Payment approved with ${existingSplits.length} commission split(s)`,
+          flow: 'new_deal_with_splits',
+        });
+
+      } else {
+        // ===== OLD DEAL FLOW: No splits — use distributeCommissions =====
+        console.log(`[APPROVE-V4] Old deal flow: distributing commissions`);
+
+        const totalCommission = parseFloat(payment.totalCommission || payment.grossAmount || payment.amount || '0');
+        console.log(`[APPROVE-V4] Distributing commissions: totalCommission=${totalCommission}, referrerId=${deal.referrerId}`);
+
+        // Update original payment to 'distributed'
+        await db
+          .update(commissionPayments)
+          .set({
+            paymentStatus: 'distributed',
+            approvalStatus: 'approved',
+            approvedBy: req.user.id,
+            approvedAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .where(eq(commissionPayments.id, paymentId));
+        console.log(`[APPROVE-V4] Updated payment ${paymentId} → distributed`);
+
+        // Distribute commissions (creates individual payment records with 'approved' status)
+        let approvals: any[] = [];
         try {
-          const commissionTypeLabel = approval.commissionType === 'direct'
-            ? 'Commission'
-            : `Level ${approval.level} Override`;
-          const percentageLabel = approval.level === 0 ? '60%' : approval.level === 1 ? '20%' : '10%';
-
-          await createNotificationForUser(approval.userId, {
-            type: 'commission_approval',
-            title: `${commissionTypeLabel} Ready`,
-            message: `Your ${commissionTypeLabel.toLowerCase()} of £${approval.commissionAmount} (${percentageLabel}) for ${deal.businessName} is ready for approval`,
-            dealId: payment.dealId,
-            businessName: deal.businessName
-          });
-        } catch (notifError) {
-          console.error(`[APPROVE-V3] Notification error (non-fatal):`, notifError);
+          approvals = await storage.distributeCommissions(
+            payment.dealId,
+            totalCommission,
+            deal.referrerId,
+            deal.businessName,
+            null,
+            null,
+            req.user.id
+          );
+          console.log(`[APPROVE-V4] Created ${approvals.length} commission approval(s)`);
+        } catch (distError: any) {
+          console.error(`[APPROVE-V4] Distribution error (non-fatal):`, distError.message);
         }
+
+        // Create audit log
+        await storage.createAdminAuditLog({
+          actorId: req.user.id,
+          action: 'approve_payment',
+          entityType: 'payment',
+          entityId: paymentId,
+          details: { dealId: payment.dealId, flow: 'old_deal_distribute' },
+          ipAddress: req.ip,
+          userAgent: req.get('User-Agent') || null
+        });
+
+        return res.json({
+          success: true,
+          message: `Payment approved and ${approvals.length} commission(s) distributed`,
+          flow: 'old_deal_distribute',
+          approvals: approvals.length,
+        });
       }
 
-      // Step 5: Create audit log
-      await storage.createAdminAuditLog({
-        actorId: req.user.id,
-        action: 'approve_payment',
-        entityType: 'payment',
-        entityId: paymentId,
-        details: { dealId: payment.dealId, grossAmount: payment.grossAmount || payment.totalCommission },
-        ipAddress: req.ip,
-        userAgent: req.get('User-Agent') || null
-      });
+    } catch (error: any) {
+      console.error("[APPROVE-V4] Error approving payment:", error);
+      res.status(500).json({ message: error.message || "Failed to approve payment" });
+    }
+  });
 
-      console.log(`[APPROVE-V3] Complete! Payment ${paymentId} approved and ${approvals.length} commissions distributed`);
+  // Debug: Inspect payment state for a deal
+  app.get('/api/admin/debug/deal-payments/:dealId', requireAuth, requireAdmin, async (req: any, res) => {
+    try {
+      const { dealId } = req.params;
+      const payments = await db
+        .select()
+        .from(commissionPayments)
+        .where(eq(commissionPayments.dealId, dealId));
+
+      const allSplits = [];
+      for (const p of payments) {
+        const splits = await db
+          .select()
+          .from(paymentSplits)
+          .where(eq(paymentSplits.paymentId, p.id));
+        allSplits.push({ paymentId: p.id, splits });
+      }
+
       res.json({
-        success: true,
-        message: `Payment approved and ${approvals.length} commission(s) distributed`,
-        approvals: approvals.length,
+        dealId,
+        paymentCount: payments.length,
+        payments: payments.map(p => ({
+          id: p.id,
+          recipientId: p.recipientId,
+          level: p.level,
+          amount: p.amount,
+          totalCommission: p.totalCommission,
+          grossAmount: p.grossAmount,
+          paymentStatus: p.paymentStatus,
+          approvalStatus: p.approvalStatus,
+          approvedBy: p.approvedBy,
+          createdAt: p.createdAt,
+        })),
+        splits: allSplits,
       });
-
     } catch (error) {
-      console.error("[APPROVE-V3] Error approving payment:", error);
-      res.status(500).json({ message: "Failed to approve payment" });
+      res.status(500).json({ message: "Debug endpoint error" });
     }
   });
 
