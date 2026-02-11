@@ -7138,6 +7138,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { paymentId } = req.params;
       const { transferReference } = req.body;
+      console.log(`[MARK-PAID] Starting for payment ${paymentId}, transferRef=${transferReference}`);
 
       const [payment] = await db
         .select()
@@ -7145,16 +7146,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .where(eq(commissionPayments.id, paymentId));
 
       if (!payment) {
+        console.log(`[MARK-PAID] Payment ${paymentId} not found`);
         return res.status(404).json({ message: "Payment not found" });
       }
 
+      console.log(`[MARK-PAID] Payment found: paymentStatus=${payment.paymentStatus}, approvalStatus=${payment.approvalStatus}, approvedBy=${payment.approvedBy}, dealId=${payment.dealId}`);
+
       if (payment.paymentStatus !== 'approved') {
+        console.log(`[MARK-PAID] REJECTED: status is '${payment.paymentStatus}', need 'approved'`);
         return res.status(400).json({
           message: `Payment must be approved before marking as paid. Current status: ${payment.paymentStatus}`
         });
       }
 
       if (!payment.approvedBy) {
+        console.log(`[MARK-PAID] REJECTED: approvedBy is null/empty`);
         return res.status(400).json({
           message: "Payment must have an approver before marking as paid"
         });
@@ -7180,7 +7186,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .where(eq(paymentSplits.paymentId, paymentId));
 
       // Update deal stage to completed
-      await storage.updateDeal(payment.dealId, { dealStage: 'completed' });
+      try {
+        await storage.updateDeal(payment.dealId, { dealStage: 'completed' });
+      } catch (dealErr: any) {
+        console.error(`[MARK-PAID] Failed to update deal stage (non-fatal):`, dealErr.message);
+      }
 
       // Create audit log
       await storage.createAdminAuditLog({
@@ -7197,11 +7207,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userAgent: req.get('User-Agent') || null
       });
 
+      console.log(`[MARK-PAID] SUCCESS: Payment ${paymentId} marked as paid`);
       res.json({ success: true, message: "Payment marked as paid" });
 
-    } catch (error) {
-      console.error("Error marking payment as paid:", error);
-      res.status(500).json({ message: "Failed to mark payment as paid" });
+    } catch (error: any) {
+      console.error("[MARK-PAID] Error:", error);
+      res.status(500).json({ message: error.message || "Failed to mark payment as paid" });
     }
   });
 
