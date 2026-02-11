@@ -6991,28 +6991,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (existingSplits.length > 0) {
         // ===== NEW DEAL FLOW: Splits already exist =====
-        // Just update the payment and splits to 'approved' — no distribution needed
-        console.log(`[APPROVE-V4] New deal flow: updating existing payment + ${existingSplits.length} splits to approved`);
+        // Mark parent as 'distributed', then create individual commissionPayments per split
+        console.log(`[APPROVE-V5] New deal flow: expanding ${existingSplits.length} splits into individual payment records`);
 
-        // Update the main payment to approved (NOT distributed — keep it simple)
+        // 1. Mark the parent payment as 'distributed' — removes it from pending list
         await db
           .update(commissionPayments)
           .set({
-            paymentStatus: 'approved',
+            paymentStatus: 'distributed',
             approvalStatus: 'approved',
             approvedBy: req.user.id,
             approvedAt: new Date(),
             updatedAt: new Date(),
           })
           .where(eq(commissionPayments.id, paymentId));
+        console.log(`[APPROVE-V5] Parent payment ${paymentId} → distributed`);
 
-        // Update all splits to approved
+        // 2. Update all splits to approved
         await db
           .update(paymentSplits)
           .set({ status: 'approved' })
           .where(eq(paymentSplits.paymentId, paymentId));
 
-        console.log(`[APPROVE-V4] Updated payment ${paymentId} and ${existingSplits.length} splits → approved`);
+        // 3. Create individual commissionPayments for each split recipient
+        const createdPayments: string[] = [];
+        for (const split of existingSplits) {
+          try {
+            const [individualPayment] = await db.insert(commissionPayments).values({
+              dealId: payment.dealId,
+              recipientId: split.beneficiaryUserId,
+              level: split.level,
+              amount: split.amount,
+              percentage: split.percentage,
+              totalCommission: payment.totalCommission || payment.amount,
+              grossAmount: payment.grossAmount || payment.totalCommission || payment.amount,
+              businessName: payment.businessName,
+              dealStage: payment.dealStage,
+              approvalStatus: 'approved',
+              paymentStatus: 'approved',
+              approvedBy: req.user.id,
+              approvedAt: new Date(),
+              notes: `Level ${split.level} commission from deal approval`,
+            }).returning();
+            createdPayments.push(individualPayment.id);
+            console.log(`[APPROVE-V5] Created individual payment ${individualPayment.id} for user ${split.beneficiaryUserId} (Level ${split.level}, £${split.amount})`);
+          } catch (splitError: any) {
+            console.error(`[APPROVE-V5] Failed to create payment for split Level ${split.level}:`, splitError.message);
+          }
+        }
+
+        console.log(`[APPROVE-V5] Created ${createdPayments.length}/${existingSplits.length} individual payment records`);
 
         // Create audit log
         await storage.createAdminAuditLog({
@@ -7020,15 +7048,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           action: 'approve_payment',
           entityType: 'payment',
           entityId: paymentId,
-          metadata: { dealId: payment.dealId, flow: 'new_deal_with_splits' },
+          metadata: { dealId: payment.dealId, flow: 'new_deal_expand_splits', paymentsCreated: createdPayments.length },
           ipAddress: req.ip,
           userAgent: req.get('User-Agent') || null
         });
 
         return res.json({
           success: true,
-          message: `Payment approved with ${existingSplits.length} commission split(s)`,
-          flow: 'new_deal_with_splits',
+          message: `Payment approved: ${createdPayments.length} individual commission(s) created for withdrawal`,
+          flow: 'new_deal_expand_splits',
+          paymentsCreated: createdPayments.length,
         });
 
       } else {

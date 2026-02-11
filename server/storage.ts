@@ -3663,13 +3663,17 @@ export class DatabaseStorage implements IStorage {
     amount: string;
     percentage: string;
     totalCommission?: string;
+    grossAmount?: string;
+    currency?: string;
     businessName?: string;
     dealStage?: string;
     approvalStatus?: string;
     paymentStatus?: string;
     paymentDate?: Date;
     transferReference?: string;
+    evidenceUrl?: string;
     notes?: string;
+    createdBy?: string;
     approvedBy?: string | null;
     approvedAt?: Date | null;
   }): Promise<any> {
@@ -3680,13 +3684,17 @@ export class DatabaseStorage implements IStorage {
       amount: paymentData.amount,
       percentage: paymentData.percentage,
       totalCommission: paymentData.totalCommission || null,
+      grossAmount: paymentData.grossAmount || null,
+      currency: paymentData.currency || 'GBP',
       businessName: paymentData.businessName || null,
       dealStage: paymentData.dealStage || null,
       approvalStatus: paymentData.approvalStatus || 'pending',
       paymentStatus: paymentData.paymentStatus || 'pending',
       paymentDate: paymentData.paymentDate || null,
       transferReference: paymentData.transferReference || null,
+      evidenceUrl: paymentData.evidenceUrl || null,
       notes: paymentData.notes || null,
+      createdBy: paymentData.createdBy || null,
       approvedBy: paymentData.approvedBy || null,
       approvedAt: paymentData.approvedAt || null,
     }).returning();

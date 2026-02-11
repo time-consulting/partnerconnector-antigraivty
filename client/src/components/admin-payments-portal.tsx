@@ -338,7 +338,7 @@ export function AdminPaymentsPortal() {
     <div className="space-y-6">
       {/* Version Banner - update timestamp to verify deployment */}
       <div className="px-4 py-2 rounded-lg text-xs font-mono" style={{ background: 'rgba(34, 211, 238, 0.1)', border: '1px solid rgba(34, 211, 238, 0.3)', color: '#22d3ee' }}>
-        🚀 Payment Portal v4.2 — Last deploy: 11 Feb 2026 21:32 UTC — FIX: audit log crash (details→metadata)
+        🚀 Payment Portal v4.3 — Last deploy: 11 Feb 2026 22:00 UTC — FIX: splits expand to individual payments on approve
       </div>
       {/* Header */}
       <div
