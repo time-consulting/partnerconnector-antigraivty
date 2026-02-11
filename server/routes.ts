@@ -7042,16 +7042,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         console.log(`[APPROVE-V5] Created ${createdPayments.length}/${existingSplits.length} individual payment records`);
 
-        // Create audit log
-        await storage.createAdminAuditLog({
-          actorId: req.user.id,
-          action: 'approve_payment',
-          entityType: 'payment',
-          entityId: paymentId,
-          metadata: { dealId: payment.dealId, flow: 'new_deal_expand_splits', paymentsCreated: createdPayments.length },
-          ipAddress: req.ip,
-          userAgent: req.get('User-Agent') || null
-        });
+        // Create audit log (non-fatal)
+        try {
+          await storage.createAdminAuditLog({
+            actorId: req.user.id,
+            action: 'approve_payment',
+            entityType: 'payment',
+            entityId: paymentId,
+            metadata: { dealId: payment.dealId, flow: 'new_deal_expand_splits', paymentsCreated: createdPayments.length },
+            ipAddress: req.ip,
+            userAgent: req.get('User-Agent') || null
+          });
+        } catch (auditError: any) {
+          console.error(`[APPROVE-V5] Audit log failed (non-fatal):`, auditError.message);
+        }
 
         return res.json({
           success: true,
@@ -7097,16 +7101,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error(`[APPROVE-V4] Distribution error (non-fatal):`, distError.message);
         }
 
-        // Create audit log
-        await storage.createAdminAuditLog({
-          actorId: req.user.id,
-          action: 'approve_payment',
-          entityType: 'payment',
-          entityId: paymentId,
-          metadata: { dealId: payment.dealId, flow: 'old_deal_distribute' },
-          ipAddress: req.ip,
-          userAgent: req.get('User-Agent') || null
-        });
+        // Create audit log (non-fatal)
+        try {
+          await storage.createAdminAuditLog({
+            actorId: req.user.id,
+            action: 'approve_payment',
+            entityType: 'payment',
+            entityId: paymentId,
+            metadata: { dealId: payment.dealId, flow: 'old_deal_distribute' },
+            ipAddress: req.ip,
+            userAgent: req.get('User-Agent') || null
+          });
+        } catch (auditError: any) {
+          console.error(`[APPROVE-V5] Audit log failed (non-fatal):`, auditError.message);
+        }
 
         return res.json({
           success: true,
@@ -7221,20 +7229,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error(`[MARK-PAID] Failed to update deal stage (non-fatal):`, dealErr.message);
       }
 
-      // Create audit log
-      await storage.createAdminAuditLog({
-        actorId: req.user.id,
-        action: 'mark_payment_paid',
-        entityType: 'payment',
-        entityId: paymentId,
-        metadata: {
-          dealId: payment.dealId,
-          grossAmount: payment.grossAmount,
-          transferReference: transferReference || `PAY_${Date.now()}`
-        },
-        ipAddress: req.ip,
-        userAgent: req.get('User-Agent') || null
-      });
+      // Create audit log (non-fatal)
+      try {
+        await storage.createAdminAuditLog({
+          actorId: req.user.id,
+          action: 'mark_payment_paid',
+          entityType: 'payment',
+          entityId: paymentId,
+          metadata: {
+            dealId: payment.dealId,
+            grossAmount: payment.grossAmount,
+            transferReference: transferReference || `PAY_${Date.now()}`
+          },
+          ipAddress: req.ip,
+          userAgent: req.get('User-Agent') || null
+        });
+      } catch (auditError: any) {
+        console.error(`[MARK-PAID] Audit log failed (non-fatal):`, auditError.message);
+      }
 
       console.log(`[MARK-PAID] SUCCESS: Payment ${paymentId} marked as paid`);
       res.json({ success: true, message: "Payment marked as paid" });

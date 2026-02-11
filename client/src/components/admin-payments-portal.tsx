@@ -51,6 +51,14 @@ export function AdminPaymentsPortal() {
   const [withdrawDialogOpen, setWithdrawDialogOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<any>(null);
   const [transferReference, setTransferReference] = useState("");
+  const [debugLogs, setDebugLogs] = useState<Array<{ timestamp: string; paymentId: string; action: string; details: string; type: 'info' | 'success' | 'error' | 'warning' }>>([])
+  const [showDebugPanel, setShowDebugPanel] = useState(false);
+
+  const addDebugLog = (paymentId: string, action: string, details: string, type: 'info' | 'success' | 'error' | 'warning' = 'info') => {
+    const entry = { timestamp: new Date().toISOString(), paymentId, action, details, type };
+    console.log(`[DEBUG-LOG] ${entry.timestamp} | ${paymentId} | ${action} | ${details}`);
+    setDebugLogs(prev => [entry, ...prev].slice(0, 50));
+  };
 
   // Fetch payments needing approval (from new commission workflow)
   const { data: needsApprovalPayments = [], isLoading: needsApprovalLoading } = useQuery<any[]>({
@@ -71,27 +79,24 @@ export function AdminPaymentsPortal() {
   // Uses the simpler /approve endpoint that takes paymentId directly
   const approveMutation = useMutation({
     mutationFn: async (payment: any) => {
-      console.log('[APPROVE-V3] Payment ID:', payment.id);
-      console.log('[APPROVE-V3] Business Name:', payment.businessName);
-      console.log('[APPROVE-V3] Total Commission:', payment.totalCommission || payment.grossAmount);
+      addDebugLog(payment.id, 'APPROVE_START', `Business: ${payment.businessName}, Status: ${payment.paymentStatus}, Amount: ${payment.grossAmount || payment.totalCommission || payment.amount}`);
 
       if (!payment.id) {
         const errorMsg = `Payment ID is missing! Keys: ${Object.keys(payment).join(', ')}`;
-        alert(`DEBUG ERROR: ${errorMsg}`);
+        addDebugLog('unknown', 'APPROVE_ERROR', errorMsg, 'error');
         throw new Error(errorMsg);
       }
 
-      // Use the simple /approve endpoint — takes paymentId directly, no deal lookup needed
       const url = `/api/admin/payments/${payment.id}/approve`;
-      console.log('[APPROVE-V3] Calling:', url);
+      addDebugLog(payment.id, 'APPROVE_CALL', `POST ${url}`);
 
       const response = await apiRequest('POST', url);
       const result = await response.json();
-      console.log('[APPROVE-V3] Response:', result);
+      addDebugLog(payment.id, 'APPROVE_RESPONSE', `Flow: ${result.flow}, Message: ${result.message}, Payments created: ${result.paymentsCreated ?? 'N/A'}`, 'success');
       return result;
     },
     onSuccess: (data) => {
-      console.log('[APPROVE-V3] SUCCESS:', data);
+      addDebugLog(data?.paymentId || '?', 'APPROVE_SUCCESS', `Invalidating queries. ${data?.message}`, 'success');
       queryClient.invalidateQueries({ queryKey: ['/api/admin/payments/needs-approval'] });
       queryClient.invalidateQueries({ queryKey: ['/api/admin/commission-payments/approved'] });
       queryClient.invalidateQueries({ queryKey: ['/api/admin/payments/live-accounts'] });
@@ -101,11 +106,15 @@ export function AdminPaymentsPortal() {
       });
     },
     onError: (error: any) => {
-      console.error('[APPROVE-V3] FAILED:', error);
-      alert(`APPROVE FAILED: ${error.message}`);
+      addDebugLog('?', 'APPROVE_ERROR', `${error.message} — still invalidating queries`, 'error');
+      // CRITICAL: Invalidate queries even on error!
+      // The DB update may have succeeded even if the route returned 500 (e.g. audit log crash)
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/payments/needs-approval'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/commission-payments/approved'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/payments/live-accounts'] });
       toast({
-        title: "Approval Failed",
-        description: error.message || "Failed to approve payment",
+        title: "Approval Issue",
+        description: `${error.message}. Refreshing data...`,
         variant: "destructive",
       });
     },
@@ -336,10 +345,57 @@ export function AdminPaymentsPortal() {
 
   return (
     <div className="space-y-6">
-      {/* Version Banner - update timestamp to verify deployment */}
-      <div className="px-4 py-2 rounded-lg text-xs font-mono" style={{ background: 'rgba(34, 211, 238, 0.1)', border: '1px solid rgba(34, 211, 238, 0.3)', color: '#22d3ee' }}>
-        🚀 Payment Portal v4.3 — Last deploy: 11 Feb 2026 22:00 UTC — FIX: splits expand to individual payments on approve
+      {/* Version Banner + Debug Toggle */}
+      <div className="px-4 py-2 rounded-lg text-xs font-mono flex items-center justify-between" style={{ background: 'rgba(34, 211, 238, 0.1)', border: '1px solid rgba(34, 211, 238, 0.3)', color: '#22d3ee' }}>
+        <span>🚀 Payment Portal v5.0 — Last deploy: 11 Feb 2026 22:10 UTC — FIX: splits expand + cache invalidation on error</span>
+        <button
+          onClick={() => setShowDebugPanel(!showDebugPanel)}
+          className="px-2 py-1 rounded text-xs"
+          style={{ background: debugLogs.length > 0 ? 'rgba(245, 158, 11, 0.3)' : 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)' }}
+        >
+          🔍 Debug ({debugLogs.length})
+        </button>
       </div>
+
+      {/* Debug Logs Panel */}
+      {showDebugPanel && (
+        <Card style={{ background: '#0a0a0a', border: '1px solid #333' }}>
+          <CardHeader className="pb-2">
+            <div className="flex justify-between items-center">
+              <CardTitle className="text-sm" style={{ color: '#22d3ee' }}>Debug Logs</CardTitle>
+              <div className="flex gap-2">
+                <button onClick={() => setDebugLogs([])} className="text-xs px-2 py-1 rounded" style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)' }}>Clear</button>
+                <button onClick={() => setShowDebugPanel(false)} className="text-xs px-2 py-1 rounded" style={{ background: 'rgba(255,255,255,0.1)', color: '#999' }}>Close</button>
+              </div>
+            </div>
+            <CardDescription className="text-xs" style={{ color: '#666' }}>
+              Pending filter: <code style={{ color: '#fbbf24' }}>paymentStatus = 'needs_approval'</code> | Approved filter: <code style={{ color: '#22d3ee' }}>paymentStatus = 'approved'</code>
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {debugLogs.length === 0 ? (
+              <div className="text-xs text-center py-4" style={{ color: '#666' }}>No logs yet. Approve a payment to see logs.</div>
+            ) : (
+              <div className="space-y-1 max-h-64 overflow-y-auto">
+                {debugLogs.map((log, i) => (
+                  <div key={i} className="text-xs font-mono p-2 rounded" style={{
+                    background: log.type === 'error' ? 'rgba(239,68,68,0.1)' : log.type === 'success' ? 'rgba(34,197,94,0.1)' : log.type === 'warning' ? 'rgba(245,158,11,0.1)' : 'rgba(255,255,255,0.05)',
+                    borderLeft: `3px solid ${log.type === 'error' ? '#ef4444' : log.type === 'success' ? '#22c55e' : log.type === 'warning' ? '#f59e0b' : '#666'}`,
+                  }}>
+                    <span style={{ color: '#666' }}>{new Date(log.timestamp).toLocaleTimeString()}</span>
+                    {' '}
+                    <span style={{ color: '#22d3ee' }}>[{log.paymentId.slice(0, 8)}]</span>
+                    {' '}
+                    <span style={{ color: '#fbbf24' }}>{log.action}</span>
+                    {' '}
+                    <span style={{ color: '#ccc' }}>{log.details}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
       {/* Header */}
       <div
         className="p-6 rounded-xl"
