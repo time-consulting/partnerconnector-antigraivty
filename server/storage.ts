@@ -3705,7 +3705,12 @@ export class DatabaseStorage implements IStorage {
     return await db
       .select()
       .from(commissionPayments)
-      .where(eq(commissionPayments.recipientId, recipientId))
+      .where(
+        and(
+          eq(commissionPayments.recipientId, recipientId),
+          sql`payment_status != 'distributed'`
+        )
+      )
       .orderBy(desc(commissionPayments.createdAt));
   }
 

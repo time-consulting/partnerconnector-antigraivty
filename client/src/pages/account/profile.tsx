@@ -53,7 +53,7 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-background">
       <Sidebar onExpandChange={setSidebarExpanded} />
-      
+
       <div className={`transition-all duration-300 ${sidebarExpanded ? 'ml-64' : 'ml-20'} max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8`}>
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
@@ -154,8 +154,8 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 className="w-full md:w-auto"
                 disabled={updateProfileMutation.isPending}
                 data-testid="button-save-profile"
@@ -165,6 +165,9 @@ export default function ProfilePage() {
             </form>
           </CardContent>
         </Card>
+
+        {/* Version stamp - increment to verify deployments */}
+        <p className="text-[10px] text-muted-foreground/40 text-right mt-6 select-none">v1.0.1</p>
       </div>
     </div>
   );
