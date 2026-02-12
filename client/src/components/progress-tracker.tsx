@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,11 +12,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { 
-  CheckCircle2, 
-  Clock, 
+import {
+  CheckCircle2,
+  Clock,
   Circle,
-  Building, 
+  Building,
   Calendar,
   FileText,
   CreditCard,
@@ -34,10 +34,10 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { format } from "date-fns";
-import { 
-  getPartnerProgressSteps, 
+import {
+  getPartnerProgressSteps,
   mapDealToPartnerProgress,
-  type DealStage 
+  type DealStage
 } from "@shared/dealWorkflow";
 
 const PROGRESS_ICONS: Record<string, typeof FileText> = {
@@ -167,7 +167,7 @@ export default function ProgressTracker({ isOpen, onClose, deal, viewMode = 'par
 
     setUploading(true);
     const formData = new FormData();
-    
+
     Array.from(files).forEach(file => {
       formData.append('bills', file);
     });
@@ -307,7 +307,7 @@ export default function ProgressTracker({ isOpen, onClose, deal, viewMode = 'par
                     <Calendar className="w-4 h-4 text-muted-foreground" />
                     <span className="text-muted-foreground">Submitted:</span>
                     <span className="font-medium text-foreground">
-                      {typeof deal.submittedAt === 'string' 
+                      {typeof deal.submittedAt === 'string'
                         ? format(new Date(deal.submittedAt), 'dd MMM yyyy')
                         : format(deal.submittedAt, 'dd MMM yyyy')
                       }
@@ -338,26 +338,25 @@ export default function ProgressTracker({ isOpen, onClose, deal, viewMode = 'par
                   {partnerProgressSteps.map((step, index) => {
                     const status = getStageStatus(index);
                     const StepIcon = PROGRESS_ICONS[step.id] || Circle;
-                    
+
                     return (
                       <div key={step.id} className="relative flex items-start gap-4 pb-6 last:pb-0">
                         {/* Connector Line */}
                         {index < partnerProgressSteps.length - 1 && (
-                          <div 
-                            className={`absolute left-[18px] top-10 w-0.5 h-[calc(100%-24px)] ${
-                              status === "completed" ? "bg-primary" : "bg-border"
-                            }`}
+                          <div
+                            className={`absolute left-[18px] top-10 w-0.5 h-[calc(100%-24px)] ${status === "completed" ? "bg-primary" : "bg-border"
+                              }`}
                           />
                         )}
-                        
+
                         {/* Status Icon */}
                         <div className={`
                           relative z-10 flex items-center justify-center w-9 h-9 rounded-full border-2 transition-all
-                          ${status === "completed" 
-                            ? "bg-primary border-primary text-primary-foreground" 
+                          ${status === "completed"
+                            ? "bg-primary border-primary text-primary-foreground"
                             : status === "current"
-                            ? "bg-primary/20 border-primary text-primary animate-pulse"
-                            : "bg-muted border-border text-muted-foreground"
+                              ? "bg-primary/20 border-primary text-primary animate-pulse"
+                              : "bg-muted border-border text-muted-foreground"
                           }
                         `}>
                           {status === "completed" ? (
@@ -368,17 +367,16 @@ export default function ProgressTracker({ isOpen, onClose, deal, viewMode = 'par
                             <Circle className="w-4 h-4" />
                           )}
                         </div>
-                        
+
                         {/* Stage Content */}
                         <div className="flex-1 min-w-0 pt-1">
                           <div className="flex items-center justify-between">
-                            <h4 className={`font-medium ${
-                              status === "completed" 
-                                ? "text-primary" 
+                            <h4 className={`font-medium ${status === "completed"
+                                ? "text-primary"
                                 : status === "current"
-                                ? "text-foreground"
-                                : "text-muted-foreground"
-                            }`}>
+                                  ? "text-foreground"
+                                  : "text-muted-foreground"
+                              }`}>
                               {step.label}
                             </h4>
                             {status === "completed" && (
@@ -422,67 +420,66 @@ export default function ProgressTracker({ isOpen, onClose, deal, viewMode = 'par
                         <p className="text-xs text-muted-foreground">Send a message to get in touch with our team</p>
                       </div>
                     ) : (
-                        messages.map((msg: any) => {
-                          const isPartnerMessage = !msg.isAdmin && (msg.authorType === 'customer' || msg.authorType === 'partner' || msg.isAdmin === false);
-                          return (
-                            <div 
-                              key={msg.id}
-                              className={`flex gap-3 ${isPartnerMessage ? 'justify-end' : ''}`}
-                            >
-                              {!isPartnerMessage && (
-                                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                                  <Bot className="w-4 h-4 text-primary" />
-                                </div>
-                              )}
-                              <div className={`
-                                max-w-[80%] p-3 rounded-lg
-                                ${isPartnerMessage 
-                                  ? 'bg-primary text-primary-foreground' 
-                                  : 'bg-muted border border-border'
-                                }
-                              `}>
-                                <p className="text-sm">{msg.message}</p>
-                                <p className={`text-xs mt-1 ${
-                                  isPartnerMessage ? 'text-primary-foreground/70' : 'text-muted-foreground'
-                                }`}>
-                                  {msg.senderName && <span className="font-medium">{msg.senderName} · </span>}
-                                  {msg.createdAt ? format(new Date(msg.createdAt), 'dd MMM HH:mm') : ''}
-                                </p>
+                      messages.map((msg: any) => {
+                        const isPartnerMessage = !msg.isAdmin && (msg.authorType === 'customer' || msg.authorType === 'partner' || msg.isAdmin === false);
+                        return (
+                          <div
+                            key={msg.id}
+                            className={`flex gap-3 ${isPartnerMessage ? 'justify-end' : ''}`}
+                          >
+                            {!isPartnerMessage && (
+                              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                                <Bot className="w-4 h-4 text-primary" />
                               </div>
-                              {isPartnerMessage && (
-                                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                                  <User className="w-4 h-4 text-primary" />
-                                </div>
-                              )}
+                            )}
+                            <div className={`
+                                max-w-[80%] p-3 rounded-lg
+                                ${isPartnerMessage
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-muted border border-border'
+                              }
+                              `}>
+                              <p className="text-sm">{msg.message}</p>
+                              <p className={`text-xs mt-1 ${isPartnerMessage ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                                }`}>
+                                {msg.senderName && <span className="font-medium">{msg.isAdminMessage || msg.authorType === 'admin' ? 'Support' : msg.senderName} · </span>}
+                                {msg.createdAt ? format(new Date(msg.createdAt), 'dd MMM HH:mm') : ''}
+                              </p>
                             </div>
-                          );
-                        })
-                      )}
-                      <div ref={messagesEndRef} />
-                    </div>
-                    
-                    {/* Message Input */}
-                    <div className="flex gap-2">
-                      <Textarea
-                        placeholder="Type your message..."
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                        className="min-h-[60px] resize-none bg-background border-border"
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault();
-                            handleSendMessage();
-                          }
-                        }}
-                      />
-                      <Button 
-                        onClick={handleSendMessage}
-                        disabled={!newMessage.trim() || sendMessageMutation.isPending}
-                        className="self-end bg-primary hover:bg-primary/90"
-                      >
-                        <Send className="w-4 h-4" />
-                      </Button>
-                    </div>
+                            {isPartnerMessage && (
+                              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                                <User className="w-4 h-4 text-primary" />
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
+                    <div ref={messagesEndRef} />
+                  </div>
+
+                  {/* Message Input */}
+                  <div className="flex gap-2">
+                    <Textarea
+                      placeholder="Type your message..."
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      className="min-h-[60px] resize-none bg-background border-border"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSendMessage();
+                        }
+                      }}
+                    />
+                    <Button
+                      onClick={handleSendMessage}
+                      disabled={!newMessage.trim() || sendMessageMutation.isPending}
+                      className="self-end bg-primary hover:bg-primary/90"
+                    >
+                      <Send className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -548,7 +545,7 @@ export default function ProgressTracker({ isOpen, onClose, deal, viewMode = 'par
                               try {
                                 const response = await fetch(`/api/bills/${doc.id}/download`);
                                 if (!response.ok) throw new Error('Download failed');
-                                
+
                                 const blob = await response.blob();
                                 const url = window.URL.createObjectURL(blob);
                                 const a = document.createElement('a');

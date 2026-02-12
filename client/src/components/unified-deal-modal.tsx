@@ -381,7 +381,7 @@ function MessagingSection({ dealId }: { dealId: string }) {
                 <User className="h-4 w-4 mt-0.5 text-gray-400" />
                 <div className="flex-1">
                   <p className="text-xs font-medium text-gray-400 mb-1">
-                    {msg.authorType === 'admin' || msg.isAdminMessage ? 'Dojo Admin' : (msg.senderName || msg.authorName || 'You')}
+                    {msg.authorType === 'admin' || msg.isAdminMessage ? 'Support' : (msg.senderName || msg.authorName || 'You')}
                   </p>
                   <p className="text-sm text-white">{msg.message}</p>
                   <p className="text-xs text-gray-500 mt-1">
