@@ -2134,6 +2134,7 @@ export class DatabaseStorage implements IStorage {
         senderName: sql<string>`CASE WHEN ${dealMessages.isAdminMessage} = true THEN 'Support' ELSE ${dealMessages.senderName} END`,
         isAdmin: dealMessages.isAdminMessage,
         message: dealMessages.message,
+        read: dealMessages.read,
         createdAt: dealMessages.createdAt,
         source: sql<string>`'deal'`,
       })
@@ -2156,6 +2157,7 @@ export class DatabaseStorage implements IStorage {
           senderName: sql<string>`CASE WHEN ${quoteQA.authorType} = 'admin' THEN 'Support' ELSE COALESCE(${users.firstName} || ' ' || ${users.lastName}, 'Unknown') END`,
           isAdmin: sql<boolean>`${quoteQA.authorType} = 'admin'`,
           message: quoteQA.message,
+          read: sql<boolean>`true`,
           createdAt: quoteQA.createdAt,
           source: sql<string>`'quote'`,
         })

@@ -5,11 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import Sidebar from "@/components/sidebar";
-import { MessageSquare, Send, ChevronDown, ChevronUp, ArrowLeft, Building, Bot, User } from "lucide-react";
+import {
+    MessageSquare, Send, ChevronDown, ChevronUp, ArrowLeft,
+    Building, Bot, User, Inbox, CheckCheck, Filter
+} from "lucide-react";
 import { useLocation } from "wouter";
 import { useState } from "react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+
+type FilterTab = "all" | "unread" | "read";
 
 export default function UserMessagesPage() {
     const { user } = useAuth();
@@ -17,6 +22,7 @@ export default function UserMessagesPage() {
     const [sidebarExpanded, setSidebarExpanded] = useState(false);
     const [replyText, setReplyText] = useState<Record<string, string>>({});
     const [expandedThreads, setExpandedThreads] = useState<Set<string>>(new Set());
+    const [activeTab, setActiveTab] = useState<FilterTab>("all");
     const { toast } = useToast();
 
     // Fetch all messages across all user's deals
@@ -35,26 +41,37 @@ export default function UserMessagesPage() {
     }, {} as Record<string, any[]>);
 
     // Build thread summaries
-    const threads = Object.entries(messagesByDeal).map(([dealId, msgs]: [string, any[]]) => {
+    const allThreads = Object.entries(messagesByDeal).map(([dealId, msgs]: [string, any[]]) => {
         const sorted = [...msgs].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        const unreadCount = sorted.filter((m: any) => m.isAdmin && !m.read).length;
         return {
             dealId,
             businessName: sorted[0].businessName || 'Unknown Deal',
             latestMessage: sorted[0],
             messages: sorted,
-            unreadCount: sorted.filter((m: any) => m.isAdmin && !m.read).length,
+            unreadCount,
+            hasUnread: unreadCount > 0,
             totalCount: sorted.length,
         };
     });
 
     // Sort threads: unread first, then by latest message
-    threads.sort((a, b) => {
-        if (a.unreadCount > 0 && b.unreadCount === 0) return -1;
-        if (a.unreadCount === 0 && b.unreadCount > 0) return 1;
+    allThreads.sort((a, b) => {
+        if (a.hasUnread && !b.hasUnread) return -1;
+        if (!a.hasUnread && b.hasUnread) return 1;
         return new Date(b.latestMessage.createdAt).getTime() - new Date(a.latestMessage.createdAt).getTime();
     });
 
-    const totalUnread = threads.reduce((sum, t) => sum + t.unreadCount, 0);
+    // Apply tab filter
+    const filteredThreads = allThreads.filter(thread => {
+        if (activeTab === "unread") return thread.hasUnread;
+        if (activeTab === "read") return !thread.hasUnread;
+        return true; // "all"
+    });
+
+    const totalUnread = allThreads.reduce((sum, t) => sum + t.unreadCount, 0);
+    const totalThreads = allThreads.length;
+    const readThreads = allThreads.filter(t => !t.hasUnread).length;
 
     // Reply mutation
     const replyMutation = useMutation({
@@ -64,7 +81,7 @@ export default function UserMessagesPage() {
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({ queryKey: ["/api/user/messages"] });
             queryClient.invalidateQueries({ queryKey: ["/api/user/unread-count"] });
-            queryClient.invalidateQueries({ queryKey: ["/api/deals", variables.dealId, "messages"] });
+            queryClient.invalidateQueries({ queryKey: [`/api/deals/${variables.dealId}/messages`] });
             setReplyText((prev) => ({ ...prev, [variables.dealId]: "" }));
             toast({
                 title: "Message sent",
@@ -98,13 +115,19 @@ export default function UserMessagesPage() {
         });
     };
 
+    const tabItems: { key: FilterTab; label: string; count: number; icon: any }[] = [
+        { key: "all", label: "All", count: totalThreads, icon: Inbox },
+        { key: "unread", label: "Unread", count: totalUnread, icon: MessageSquare },
+        { key: "read", label: "Read", count: readThreads, icon: CheckCheck },
+    ];
+
     return (
         <div className="min-h-screen bg-background">
             <Sidebar onExpandChange={setSidebarExpanded} />
             <div className={sidebarExpanded ? 'ml-64' : 'ml-20'}>
                 <div className="p-6 lg:p-8">
                     {/* Header */}
-                    <div className="mb-8">
+                    <div className="mb-6">
                         <Button
                             variant="ghost"
                             onClick={() => setLocation("/dashboard")}
@@ -125,15 +148,37 @@ export default function UserMessagesPage() {
                             <div>
                                 <h1 className="text-3xl font-bold text-foreground">Messages</h1>
                                 <p className="text-muted-foreground">
-                                    Your conversations with the Support team
-                                    {totalUnread > 0 && (
-                                        <span className="ml-2 text-primary font-medium">
-                                            — {totalUnread} unread
-                                        </span>
-                                    )}
+                                    All conversations with the Support team across your deals
                                 </p>
                             </div>
                         </div>
+                    </div>
+
+                    {/* Filter Tabs */}
+                    <div className="flex items-center gap-2 mb-6">
+                        {tabItems.map((tab) => (
+                            <button
+                                key={tab.key}
+                                onClick={() => setActiveTab(tab.key)}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === tab.key
+                                        ? "bg-primary text-primary-foreground shadow-md shadow-primary/25"
+                                        : "bg-card text-muted-foreground border border-border hover:bg-secondary hover:text-foreground"
+                                    }`}
+                            >
+                                <tab.icon className="w-4 h-4" />
+                                {tab.label}
+                                {tab.count > 0 && (
+                                    <span className={`text-xs px-1.5 py-0.5 rounded-full ${activeTab === tab.key
+                                            ? "bg-primary-foreground/20 text-primary-foreground"
+                                            : tab.key === "unread" && tab.count > 0
+                                                ? "bg-red-500/20 text-red-400"
+                                                : "bg-muted text-muted-foreground"
+                                        }`}>
+                                        {tab.count}
+                                    </span>
+                                )}
+                            </button>
+                        ))}
                     </div>
 
                     {/* Loading state */}
@@ -146,26 +191,35 @@ export default function UserMessagesPage() {
                                 </div>
                             </CardContent>
                         </Card>
-                    ) : threads.length === 0 ? (
+                    ) : filteredThreads.length === 0 ? (
                         <Card className="bg-card border-border">
                             <CardContent className="p-12">
                                 <div className="text-center text-muted-foreground">
                                     <MessageSquare className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                                    <p className="text-lg font-medium mb-1">No messages yet</p>
-                                    <p className="text-sm">When Support responds to one of your deals, the conversation will appear here.</p>
+                                    <p className="text-lg font-medium mb-1">
+                                        {activeTab === "unread" ? "No unread messages" :
+                                            activeTab === "read" ? "No read messages" :
+                                                "No messages yet"}
+                                    </p>
+                                    <p className="text-sm">
+                                        {activeTab === "unread"
+                                            ? "You're all caught up! Check the 'All' tab to see all conversations."
+                                            : activeTab === "read"
+                                                ? "No conversations have been read yet."
+                                                : "When Support responds to one of your deals, the conversation will appear here."}
+                                    </p>
                                 </div>
                             </CardContent>
                         </Card>
                     ) : (
                         <div className="grid gap-4">
-                            {threads.map((thread) => {
+                            {filteredThreads.map((thread) => {
                                 const isExpanded = expandedThreads.has(thread.dealId);
-                                const hasUnread = thread.unreadCount > 0;
 
                                 return (
                                     <Card
                                         key={thread.dealId}
-                                        className={`bg-card border-border transition-all duration-200 ${hasUnread
+                                        className={`bg-card border-border transition-all duration-200 ${thread.hasUnread
                                             ? 'border-l-4 border-l-primary shadow-lg shadow-primary/5'
                                             : ''
                                             }`}
@@ -178,15 +232,19 @@ export default function UserMessagesPage() {
                                             >
                                                 <div className="flex items-center justify-between">
                                                     <div className="flex items-center gap-3 flex-1 min-w-0">
-                                                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                                                            <Building className="h-5 w-5 text-primary" />
+                                                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${thread.hasUnread ? 'bg-primary/20' : 'bg-secondary'
+                                                            }`}>
+                                                            <Building className={`h-5 w-5 ${thread.hasUnread ? 'text-primary' : 'text-muted-foreground'}`} />
                                                         </div>
                                                         <div className="flex-1 min-w-0">
                                                             <div className="flex items-center gap-2 flex-wrap">
+                                                                {thread.hasUnread && (
+                                                                    <div className="w-2.5 h-2.5 bg-primary rounded-full animate-pulse flex-shrink-0" />
+                                                                )}
                                                                 <p className="font-semibold text-foreground">
                                                                     {thread.businessName}
                                                                 </p>
-                                                                {hasUnread && (
+                                                                {thread.hasUnread && (
                                                                     <Badge className="bg-primary/15 text-primary border-primary/30 text-[10px] px-1.5 py-0">
                                                                         {thread.unreadCount} NEW
                                                                     </Badge>
@@ -225,7 +283,7 @@ export default function UserMessagesPage() {
                                             {isExpanded && (
                                                 <div className="border-t border-border">
                                                     {/* Chat history */}
-                                                    <div className="p-5 space-y-3 max-h-96 overflow-y-auto">
+                                                    <div className="p-5 space-y-3 max-h-[500px] overflow-y-auto">
                                                         {[...thread.messages].reverse().map((msg: any) => {
                                                             const isAdminMsg = msg.isAdmin;
                                                             return (
@@ -251,6 +309,11 @@ export default function UserMessagesPage() {
                                                                             <p className="text-[10px] text-muted-foreground/60">
                                                                                 {new Date(msg.createdAt).toLocaleDateString()} {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                                             </p>
+                                                                            {!msg.read && isAdminMsg && (
+                                                                                <span className="text-[9px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full font-medium">
+                                                                                    NEW
+                                                                                </span>
+                                                                            )}
                                                                         </div>
                                                                         <p className="text-sm">{msg.message}</p>
                                                                     </div>
