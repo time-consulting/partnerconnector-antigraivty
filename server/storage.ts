@@ -289,6 +289,7 @@ export interface IStorage {
   getQuoteQA(quoteId: string): Promise<any[]>;
   getAllQuoteMessages(): Promise<any[]>;
   getAllUnifiedMessages(): Promise<any[]>;
+  markMessageAsRead(messageId: string, source: string): Promise<void>;
 
   // Quote bill upload operations
   createQuoteBillUpload(quoteId: string, dealId: string, fileName: string, fileSize: number, fileType: string, uploadedBy: string, documentType?: string, fileData?: string): Promise<any>;
@@ -3118,6 +3119,7 @@ export class DatabaseStorage implements IStorage {
         dealId: dealMessages.dealId,
         businessName: deals.businessName,
         source: sql<string>`'deal'`,
+        read: dealMessages.read,
       })
       .from(dealMessages)
       .leftJoin(deals, eq(dealMessages.dealId, deals.id))
@@ -3135,6 +3137,7 @@ export class DatabaseStorage implements IStorage {
         dealId: deals.id,
         businessName: deals.businessName,
         source: sql<string>`'quote'`,
+        read: sql<boolean>`CASE WHEN ${quoteQA.authorType} = 'admin' THEN true ELSE false END`,
       })
       .from(quoteQA)
       .leftJoin(users, eq(quoteQA.authorId, users.id))
@@ -3151,6 +3154,16 @@ export class DatabaseStorage implements IStorage {
     });
 
     return allMessages;
+  }
+
+  async markMessageAsRead(messageId: string, source: string): Promise<void> {
+    if (source === 'deal') {
+      await db
+        .update(dealMessages)
+        .set({ read: true })
+        .where(eq(dealMessages.id, messageId));
+    }
+    // quoteQA doesn't have a read column, so we skip it
   }
 
   async createQuoteBillUpload(quoteId: string, dealId: string, fileName: string, fileSize: number, fileType: string, uploadedBy: string, documentType?: string, fileData?: string): Promise<any> {

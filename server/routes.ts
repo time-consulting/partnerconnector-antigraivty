@@ -1664,6 +1664,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Mark a specific message as read
+  app.post('/api/admin/messages/:messageId/read', requireAuth, requireAdmin, async (req: any, res) => {
+    try {
+      const { messageId } = req.params;
+      const { source } = req.body; // 'deal' or 'quote'
+      await storage.markMessageAsRead(messageId, source || 'deal');
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error marking message as read:", error);
+      res.status(500).json({ message: "Failed to mark message as read" });
+    }
+  });
+
+  // Mark all messages as read
+  app.patch('/api/admin/messages/read-all', requireAuth, requireAdmin, async (req: any, res) => {
+    try {
+      const messages = await storage.getAllUnifiedMessages();
+      for (const msg of messages) {
+        if (!msg.read && msg.source === 'deal') {
+          await storage.markMessageAsRead(msg.id, 'deal');
+        }
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error marking all messages as read:", error);
+      res.status(500).json({ message: "Failed to mark all messages as read" });
+    }
+  });
+
   app.get('/api/admin/signups/:quoteId', requireAuth, requireAdmin, async (req: any, res) => {
     try {
       const signup = await storage.getSignupDetails(req.params.quoteId);
