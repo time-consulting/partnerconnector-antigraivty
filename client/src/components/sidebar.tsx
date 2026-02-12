@@ -134,14 +134,14 @@ export default function Sidebar({ onExpandChange }: SidebarProps = {}) {
     return (
       <Link key={item.path} href={item.path}>
         <button
-          className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${isActive(item.path)
-              ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
-              : "text-sidebar-foreground hover:bg-sidebar-accent"
+          className={`w-full flex items-center justify-start gap-3 px-4 py-3 rounded-lg transition-all text-left ${isActive(item.path)
+            ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
+            : "text-sidebar-foreground hover:bg-sidebar-accent"
             }`}
           data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, "-")}`}
         >
-          <div className="relative">
-            <item.icon className="w-5 h-5 flex-shrink-0" />
+          <div className="relative flex-shrink-0">
+            <item.icon className="w-5 h-5" />
             {isMessages && unreadCount > 0 && !isExpanded && (
               <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center animate-pulse">
                 {unreadCount > 9 ? '9+' : unreadCount}
@@ -175,8 +175,8 @@ export default function Sidebar({ onExpandChange }: SidebarProps = {}) {
         <button
           onClick={() => isExpanded && toggleDropdown(group.label)}
           className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${groupActive
-              ? "bg-primary/20 text-primary border border-primary/30"
-              : "text-sidebar-foreground hover:bg-sidebar-accent"
+            ? "bg-primary/20 text-primary border border-primary/30"
+            : "text-sidebar-foreground hover:bg-sidebar-accent"
             }`}
           data-testid={`nav-${group.label.toLowerCase()}`}
         >
@@ -199,8 +199,8 @@ export default function Sidebar({ onExpandChange }: SidebarProps = {}) {
               <Link key={item.path} href={item.path}>
                 <button
                   className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm ${isActive(item.path)
-                      ? "bg-primary text-primary-foreground shadow-md shadow-primary/25"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent"
+                    ? "bg-primary text-primary-foreground shadow-md shadow-primary/25"
+                    : "text-sidebar-foreground hover:bg-sidebar-accent"
                     }`}
                   data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, "-")}`}
                 >
