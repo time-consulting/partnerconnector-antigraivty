@@ -167,7 +167,7 @@ export default function ProfilePage() {
         </Card>
 
         {/* Version stamp - increment to verify deployments */}
-        <p className="text-[10px] text-muted-foreground/40 text-right mt-6 select-none">v1.0.1</p>
+        <p className="text-[10px] text-muted-foreground/40 text-right mt-6 select-none">v1.0.2</p>
       </div>
     </div>
   );

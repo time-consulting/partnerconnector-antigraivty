@@ -58,11 +58,12 @@ export default function CommissionsPage() {
   });
 
   // Fetch commission payments
-  const { data: payments = [], isLoading: paymentsLoading } = useQuery({
+  const { data: rawPayments = [], isLoading: paymentsLoading } = useQuery({
     queryKey: ["/api/commission-payments"]
   });
 
-
+  // Filter out 'distributed' parent payments (admin-only records)
+  const payments = (rawPayments as any[]).filter((p: any) => p.paymentStatus !== 'distributed');
 
   // Fetch withdrawn/paid commissions
   const { data: withdrawnPayments = [], isLoading: withdrawnLoading } = useQuery({

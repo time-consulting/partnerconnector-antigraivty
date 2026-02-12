@@ -71,7 +71,7 @@ import {
 } from "@shared/schema";
 import { googleSheetsService, type DealSheetData } from "./googleSheets";
 import { db } from "./db";
-import { eq, desc, and, sql, gte, isNull, ilike } from "drizzle-orm";
+import { eq, ne, desc, and, sql, gte, isNull, ilike } from "drizzle-orm";
 
 export interface IStorage {
   // User operations - Auth
@@ -3708,7 +3708,7 @@ export class DatabaseStorage implements IStorage {
       .where(
         and(
           eq(commissionPayments.recipientId, recipientId),
-          sql`payment_status != 'distributed'`
+          ne(commissionPayments.paymentStatus, 'distributed')
         )
       )
       .orderBy(desc(commissionPayments.createdAt));
