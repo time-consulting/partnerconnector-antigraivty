@@ -12,10 +12,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { 
-  CreditCard, 
-  DollarSign, 
-  Bot, 
+import {
+  CreditCard,
+  DollarSign,
+  Bot,
   Monitor,
   Globe,
   Calendar,
@@ -84,12 +84,22 @@ const fundingAmountOptions = [
   { id: '250k-plus', label: '£250k+' },
 ];
 
+const cardProviderOptions = [
+  { id: 'dojo', label: 'Dojo' },
+  { id: 'worldpay', label: 'Worldpay' },
+  { id: 'take_payments', label: 'Take Payments' },
+  { id: 'teya', label: 'Teya' },
+  { id: 'sumup_square', label: 'Sum Up / Square' },
+  { id: 'clover', label: 'Clover' },
+  { id: 'other', label: 'Other' },
+];
+
 export default function SubmitDeal() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading, user } = useAuth();
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
-  
+
   // Form state
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [selectedVolume, setSelectedVolume] = useState<string>('');
@@ -97,12 +107,14 @@ export default function SubmitDeal() {
   const [cardMachines, setCardMachines] = useState<string>('');
   const [fundingAmount, setFundingAmount] = useState<string>('');
   const [showCardMachineDialog, setShowCardMachineDialog] = useState(false);
+  const [takesCardPayments, setTakesCardPayments] = useState<string>(''); // 'yes' | 'no' | ''
+  const [currentCardProvider, setCurrentCardProvider] = useState<string>('');
 
   // Fetch business types
   const { data: businessTypes = [] } = useQuery<{ id: string; name: string; description: string }[]>({
     queryKey: ["/api/business-types"],
   });
-  
+
   // Client info
   const [businessName, setBusinessName] = useState('');
   const [contactName, setContactName] = useState('');
@@ -111,7 +123,7 @@ export default function SubmitDeal() {
   const [businessAddress, setBusinessAddress] = useState('');
   const [notes, setNotes] = useState('');
   const [gdprConsent, setGdprConsent] = useState(false);
-  
+
   // Files
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [dragActive, setDragActive] = useState(false);
@@ -137,20 +149,20 @@ export default function SubmitDeal() {
     mutationFn: async ({ dealData, files }: { dealData: any; files: File[] }) => {
       const response = await apiRequest("POST", "/api/deals", dealData);
       const deal = await response.json();
-      
+
       if (files && files.length > 0) {
         const formData = new FormData();
         files.forEach((file) => {
           formData.append('bills', file);
         });
-        
+
         await fetch(`/api/deals/${deal?.id}/upload-bill`, {
           method: 'POST',
           body: formData,
           credentials: 'include',
         });
       }
-      
+
       return deal;
     },
     onSuccess: () => {
@@ -177,8 +189,8 @@ export default function SubmitDeal() {
   });
 
   const toggleService = (serviceId: string) => {
-    setSelectedServices(prev => 
-      prev.includes(serviceId) 
+    setSelectedServices(prev =>
+      prev.includes(serviceId)
         ? prev.filter(s => s !== serviceId)
         : [...prev, serviceId]
     );
@@ -203,8 +215,8 @@ export default function SubmitDeal() {
   };
 
   const canProceedStep1 = selectedServices.length > 0;
-  const canProceedStep2 = selectedVolume !== '' && 
-    (!hasCardPayments || cardMachines !== '') && 
+  const canProceedStep2 = selectedVolume !== '' &&
+    (!hasCardPayments || cardMachines !== '') &&
     (!hasBusinessFunding || fundingAmount !== '');
   const canProceedStep3 = businessName && contactName && businessEmail && businessAddress;
   const canSubmit = gdprConsent;
@@ -218,7 +230,7 @@ export default function SubmitDeal() {
   };
 
   const handleSubmit = () => {
-    const dealData = {
+    const dealData: any = {
       businessName,
       contactName,
       businessEmail,
@@ -233,7 +245,13 @@ export default function SubmitDeal() {
       gdprConsent,
       isNewBusiness,
     };
-    
+
+    // Include business funding specific fields
+    if (hasBusinessFunding) {
+      dealData.takesCardPayments = takesCardPayments === 'yes';
+      dealData.currentCardProvider = takesCardPayments === 'yes' ? currentCardProvider : null;
+    }
+
     submitDealMutation.mutate({ dealData, files: uploadedFiles });
   };
 
@@ -258,7 +276,7 @@ export default function SubmitDeal() {
   return (
     <div className="min-h-screen bg-[#0f1419]">
       <Sidebar onExpandChange={setSidebarExpanded} />
-      
+
       <div className={sidebarExpanded ? 'ml-64' : 'ml-20'}>
         <div className="p-6 lg:p-8">
           {/* Header */}
@@ -278,13 +296,12 @@ export default function SubmitDeal() {
               {steps.map((step, index) => (
                 <div key={step.id} className="flex items-center">
                   <div className="flex flex-col items-center">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-                      currentStep > step.id 
-                        ? 'bg-lime-500 text-white' 
-                        : currentStep === step.id 
-                          ? 'bg-gradient-to-br from-lime-400 to-green-500 text-white' 
-                          : 'bg-[#2a3441] text-gray-500'
-                    }`}>
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${currentStep > step.id
+                      ? 'bg-lime-500 text-white'
+                      : currentStep === step.id
+                        ? 'bg-gradient-to-br from-lime-400 to-green-500 text-white'
+                        : 'bg-[#2a3441] text-gray-500'
+                      }`}>
                       {currentStep > step.id ? (
                         <CheckCircle className="w-5 h-5" />
                       ) : (
@@ -296,9 +313,8 @@ export default function SubmitDeal() {
                     </span>
                   </div>
                   {index < steps.length - 1 && (
-                    <div className={`w-16 h-1 mx-2 rounded ${
-                      currentStep > step.id ? 'bg-lime-500' : 'bg-[#2a3441]'
-                    }`} />
+                    <div className={`w-16 h-1 mx-2 rounded ${currentStep > step.id ? 'bg-lime-500' : 'bg-[#2a3441]'
+                      }`} />
                   )}
                 </div>
               ))}
@@ -319,7 +335,7 @@ export default function SubmitDeal() {
                   <CardContent className="p-6">
                     <h2 className="text-xl font-semibold text-white mb-2">Select Services</h2>
                     <p className="text-gray-400 mb-6">Choose the services your client needs (select multiple)</p>
-                    
+
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                       {services.map((service) => {
                         const isSelected = selectedServices.includes(service.id);
@@ -327,9 +343,8 @@ export default function SubmitDeal() {
                           <div
                             key={service.id}
                             onClick={() => toggleService(service.id)}
-                            className={`relative cursor-pointer rounded-2xl overflow-hidden transition-all hover:scale-[1.02] ${
-                              isSelected ? 'ring-2 ring-white ring-offset-2 ring-offset-[#1a1f26]' : ''
-                            }`}
+                            className={`relative cursor-pointer rounded-2xl overflow-hidden transition-all hover:scale-[1.02] ${isSelected ? 'ring-2 ring-white ring-offset-2 ring-offset-[#1a1f26]' : ''
+                              }`}
                             data-testid={`service-card-${service.id}`}
                           >
                             <div className={`bg-gradient-to-br ${service.gradient} p-5 h-full`}>
@@ -392,7 +407,7 @@ export default function SubmitDeal() {
                   <CardContent className="p-6">
                     <h2 className="text-xl font-semibold text-white mb-2">What's the approximate business volume each month?</h2>
                     <p className="text-gray-400 mb-6">Select the monthly card transaction volume</p>
-                    
+
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
                       {volumeOptions.map((option) => {
                         const isSelected = selectedVolume === option.id;
@@ -400,11 +415,10 @@ export default function SubmitDeal() {
                           <div
                             key={option.id}
                             onClick={() => setSelectedVolume(option.id)}
-                            className={`cursor-pointer rounded-xl p-4 text-center transition-all border-2 ${
-                              isSelected 
-                                ? 'bg-lime-500/20 border-lime-500 text-white' 
-                                : 'bg-[#2a3441] border-transparent text-gray-300 hover:border-gray-500'
-                            }`}
+                            className={`cursor-pointer rounded-xl p-4 text-center transition-all border-2 ${isSelected
+                              ? 'bg-lime-500/20 border-lime-500 text-white'
+                              : 'bg-[#2a3441] border-transparent text-gray-300 hover:border-gray-500'
+                              }`}
                             data-testid={`volume-option-${option.id}`}
                           >
                             {isSelected && (
@@ -427,7 +441,7 @@ export default function SubmitDeal() {
                       What type of business is this?
                     </h2>
                     <p className="text-gray-400 mb-6">Select the business category</p>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       {businessTypes.map((type) => {
                         const isSelected = businessTypeId === type.id;
@@ -435,11 +449,10 @@ export default function SubmitDeal() {
                           <div
                             key={type.id}
                             onClick={() => setBusinessTypeId(type.id)}
-                            className={`cursor-pointer rounded-xl p-4 transition-all border-2 ${
-                              isSelected 
-                                ? 'bg-amber-500/20 border-amber-500 text-white' 
-                                : 'bg-[#2a3441] border-transparent text-gray-300 hover:border-gray-500'
-                            }`}
+                            className={`cursor-pointer rounded-xl p-4 transition-all border-2 ${isSelected
+                              ? 'bg-amber-500/20 border-amber-500 text-white'
+                              : 'bg-[#2a3441] border-transparent text-gray-300 hover:border-gray-500'
+                              }`}
                             data-testid={`business-type-${type.id}`}
                           >
                             {isSelected && (
@@ -463,7 +476,7 @@ export default function SubmitDeal() {
                         How many card machines do they need?
                       </h2>
                       <p className="text-gray-400 mb-6">Select the number of terminals required</p>
-                      
+
                       <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
                         {cardMachineOptions.map((option) => {
                           const isSelected = cardMachines === option.id;
@@ -471,11 +484,10 @@ export default function SubmitDeal() {
                             <div
                               key={option.id}
                               onClick={() => setCardMachines(option.id)}
-                              className={`cursor-pointer rounded-xl p-4 text-center transition-all border-2 ${
-                                isSelected 
-                                  ? 'bg-pink-500/20 border-pink-500 text-white' 
-                                  : 'bg-[#2a3441] border-transparent text-gray-300 hover:border-gray-500'
-                              }`}
+                              className={`cursor-pointer rounded-xl p-4 text-center transition-all border-2 ${isSelected
+                                ? 'bg-pink-500/20 border-pink-500 text-white'
+                                : 'bg-[#2a3441] border-transparent text-gray-300 hover:border-gray-500'
+                                }`}
                               data-testid={`card-machine-option-${option.id}`}
                             >
                               {isSelected && (
@@ -499,7 +511,7 @@ export default function SubmitDeal() {
                         How much funding do they require?
                       </h2>
                       <p className="text-gray-400 mb-6">Select the approximate funding amount needed</p>
-                      
+
                       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
                         {fundingAmountOptions.map((option) => {
                           const isSelected = fundingAmount === option.id;
@@ -507,11 +519,10 @@ export default function SubmitDeal() {
                             <div
                               key={option.id}
                               onClick={() => setFundingAmount(option.id)}
-                              className={`cursor-pointer rounded-xl p-4 text-center transition-all border-2 ${
-                                isSelected 
-                                  ? 'bg-green-500/20 border-green-500 text-white' 
-                                  : 'bg-[#2a3441] border-transparent text-gray-300 hover:border-gray-500'
-                              }`}
+                              className={`cursor-pointer rounded-xl p-4 text-center transition-all border-2 ${isSelected
+                                ? 'bg-green-500/20 border-green-500 text-white'
+                                : 'bg-[#2a3441] border-transparent text-gray-300 hover:border-gray-500'
+                                }`}
                               data-testid={`funding-option-${option.id}`}
                             >
                               {isSelected && (
@@ -522,6 +533,66 @@ export default function SubmitDeal() {
                           );
                         })}
                       </div>
+
+                      {/* Card Payments Question */}
+                      <div className="mt-6 pt-6 border-t border-[#2a3441]">
+                        <h3 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
+                          <CreditCard className="w-5 h-5 text-pink-400" />
+                          Does the business take card payments?
+                        </h3>
+                        <p className="text-gray-400 mb-4 text-sm">This helps us identify cross-sell opportunities</p>
+
+                        <div className="grid grid-cols-2 gap-3 max-w-xs">
+                          {[
+                            { id: 'yes', label: 'Yes' },
+                            { id: 'no', label: 'No' },
+                          ].map((option) => {
+                            const isSelected = takesCardPayments === option.id;
+                            return (
+                              <div
+                                key={option.id}
+                                onClick={() => {
+                                  setTakesCardPayments(option.id);
+                                  if (option.id === 'no') setCurrentCardProvider('');
+                                }}
+                                className={`cursor-pointer rounded-xl p-4 text-center transition-all border-2 ${isSelected
+                                  ? 'bg-green-500/20 border-green-500 text-white'
+                                  : 'bg-[#2a3441] border-transparent text-gray-300 hover:border-gray-500'
+                                  }`}
+                                data-testid={`card-payments-${option.id}`}
+                              >
+                                {isSelected && (
+                                  <CheckCircle className="w-5 h-5 text-green-400 mx-auto mb-2" />
+                                )}
+                                <p className="font-semibold text-sm">{option.label}</p>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Card Provider Dropdown - Only if they take card payments */}
+                      {takesCardPayments === 'yes' && (
+                        <div className="mt-4">
+                          <h3 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
+                            <CreditCard className="w-5 h-5 text-pink-400" />
+                            Who is their current card provider?
+                          </h3>
+                          <select
+                            value={currentCardProvider}
+                            onChange={(e) => setCurrentCardProvider(e.target.value)}
+                            className="w-full max-w-md bg-[#2a3441] border border-[#3a4451] text-white h-12 rounded-xl px-4 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500"
+                            data-testid="select-card-provider"
+                          >
+                            <option value="" className="bg-[#2a3441]">Select a provider...</option>
+                            {cardProviderOptions.map((option) => (
+                              <option key={option.id} value={option.id} className="bg-[#2a3441]">
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 )}
@@ -535,16 +606,15 @@ export default function SubmitDeal() {
                         Upload Current Processor Bill
                       </h2>
                       <p className="text-gray-400 mb-6">Upload their current payment processing statement for comparison (optional)</p>
-                      
+
                       <div
                         onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
                         onDragLeave={() => setDragActive(false)}
                         onDrop={handleFileDrop}
-                        className={`border-2 border-dashed rounded-xl p-8 text-center transition-all ${
-                          dragActive 
-                            ? 'border-cyan-500 bg-cyan-500/10' 
-                            : 'border-[#2a3441] hover:border-gray-500'
-                        }`}
+                        className={`border-2 border-dashed rounded-xl p-8 text-center transition-all ${dragActive
+                          ? 'border-cyan-500 bg-cyan-500/10'
+                          : 'border-[#2a3441] hover:border-gray-500'
+                          }`}
                       >
                         <Upload className="w-10 h-10 text-gray-500 mx-auto mb-4" />
                         <p className="text-gray-400 mb-2">Drag and drop files here or</p>
@@ -635,7 +705,7 @@ export default function SubmitDeal() {
                   <CardContent className="p-6">
                     <h2 className="text-xl font-semibold text-white mb-2">Client Information</h2>
                     <p className="text-gray-400 mb-6">Enter the client's contact details</p>
-                    
+
                     <div className="space-y-4">
                       {/* Business Name */}
                       <div>
@@ -819,6 +889,18 @@ export default function SubmitDeal() {
                         <div className="bg-[#2a3441] rounded-xl p-4">
                           <h3 className="text-gray-400 text-sm mb-2">Funding Required</h3>
                           <p className="text-white font-semibold">{fundingAmountOptions.find(f => f.id === fundingAmount)?.label}</p>
+                          {takesCardPayments && (
+                            <div className="mt-2 pt-2 border-t border-[#3a4451]">
+                              <p className="text-gray-400 text-xs">Takes Card Payments</p>
+                              <p className="text-white text-sm font-medium">{takesCardPayments === 'yes' ? 'Yes' : 'No'}</p>
+                              {takesCardPayments === 'yes' && currentCardProvider && (
+                                <>
+                                  <p className="text-gray-400 text-xs mt-1">Current Provider</p>
+                                  <p className="text-white text-sm font-medium">{cardProviderOptions.find(p => p.id === currentCardProvider)?.label}</p>
+                                </>
+                              )}
+                            </div>
+                          )}
                         </div>
                       )}
 
@@ -891,7 +973,7 @@ export default function SubmitDeal() {
               How many card machines does the client need?
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="grid grid-cols-2 gap-3 py-4">
             {cardMachineOptions.map((option) => {
               const isSelected = cardMachines === option.id;
@@ -899,11 +981,10 @@ export default function SubmitDeal() {
                 <div
                   key={option.id}
                   onClick={() => setCardMachines(option.id)}
-                  className={`cursor-pointer rounded-xl p-4 text-center transition-all border-2 ${
-                    isSelected 
-                      ? 'bg-pink-500/20 border-pink-500 text-white' 
-                      : 'bg-[#2a3441] border-transparent text-gray-300 hover:border-gray-500'
-                  }`}
+                  className={`cursor-pointer rounded-xl p-4 text-center transition-all border-2 ${isSelected
+                    ? 'bg-pink-500/20 border-pink-500 text-white'
+                    : 'bg-[#2a3441] border-transparent text-gray-300 hover:border-gray-500'
+                    }`}
                 >
                   <p className="font-semibold text-sm">{option.label}</p>
                 </div>

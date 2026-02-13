@@ -132,6 +132,9 @@ export const deals = pgTable("deals", {
   selectedProducts: text("selected_products").array(), // Array of product IDs
   productType: varchar("product_type").default("card_payments"), // card_payments, business_funding, utilities, insurance, custom
   quoteDeliveryMethod: varchar("quote_delivery_method").default("system"), // system (built-in quote builder) or email (manual custom quote)
+  // Business funding specific fields
+  takesCardPayments: boolean("takes_card_payments"), // Does the business also take card payments? (for funding leads)
+  currentCardProvider: varchar("current_card_provider"), // dojo, worldpay, take_payments, teya, sumup_square, clover, other
   cardMachineQuantity: integer("card_machine_quantity").default(1),
   cardMachineProvider: varchar("card_machine_provider"), // Current card machine provider (if applicable)
   // MLM level tracking
