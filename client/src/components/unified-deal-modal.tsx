@@ -69,6 +69,11 @@ function ActionButtons({ deal, onActionComplete }: ActionButtonsProps) {
   const quote = deal.quote || {};
   const dealStage = deal.dealStage || deal.status || 'submitted';
 
+  // Detect if this is a funding deal
+  const isFundingDeal = deal.productType === 'business_funding' ||
+    (deal.selectedProducts && Array.isArray(deal.selectedProducts) && deal.selectedProducts.includes('business-funding')) ||
+    deal.quoteType === 'business_funding' || deal.quoteType === 'funding_with_cards';
+
   // Use dealStage as source of truth for button visibility
   const hasQuote = !!quoteId;
   const signupCompleted = !!deal.signupCompletedAt;
@@ -77,6 +82,7 @@ function ActionButtons({ deal, onActionComplete }: ActionButtonsProps) {
   const isQuoteSentStage = dealStage === 'quote_sent';
 
   // Stages where quote is approved but signup not yet completed
+  // For funding deals, skip signup since a funding specialist contacts the client directly
   const needsSignupStages = ['quote_approved', 'agreement_sent', 'signed_awaiting_docs', 'under_review', 'approved'];
   const needsSignup = needsSignupStages.includes(dealStage) && !signupCompleted;
 
@@ -89,10 +95,14 @@ function ActionButtons({ deal, onActionComplete }: ActionButtonsProps) {
 
     // Client: Quote sent but not approved - needs to approve
     if (!isAdmin && isQuoteSentStage) {
-      return { by: 'client', type: 'approve_quote', label: 'Review & Approve Quote' };
+      return {
+        by: 'client',
+        type: 'approve_quote',
+        label: isFundingDeal ? 'Proceed with Funding Application' : 'Review & Approve Quote'
+      };
     }
-    // Client: Quote approved but signup not completed
-    if (!isAdmin && needsSignup) {
+    // Client: Quote approved but signup not completed (skip for funding deals)
+    if (!isAdmin && needsSignup && !isFundingDeal) {
       return { by: 'client', type: 'complete_signup', label: 'Complete Application' };
     }
     // Admin: Quote exists but not sent to client
@@ -110,10 +120,19 @@ function ActionButtons({ deal, onActionComplete }: ActionButtonsProps) {
       return apiRequest('POST', `/api/quotes/${quoteId}/approve`, {});
     },
     onSuccess: () => {
-      toast({ title: "Quote Approved", description: "Opening sign-up form..." });
-      queryClient.invalidateQueries({ queryKey: ['/api/deals/with-quotes'] });
-      // Auto-open the signup form immediately after approval
-      setShowSignupForm(true);
+      if (isFundingDeal) {
+        toast({
+          title: "Application Submitted",
+          description: "Your funding application has been submitted. A specialist will be in touch with your quotes."
+        });
+        queryClient.invalidateQueries({ queryKey: ['/api/deals/with-quotes'] });
+        onActionComplete();
+      } else {
+        toast({ title: "Quote Approved", description: "Opening sign-up form..." });
+        queryClient.invalidateQueries({ queryKey: ['/api/deals/with-quotes'] });
+        // Auto-open the signup form immediately after approval
+        setShowSignupForm(true);
+      }
     },
     onError: () => {
       toast({ title: "Error", description: "Failed to approve quote. Please try again.", variant: "destructive" });
@@ -185,8 +204,8 @@ function ActionButtons({ deal, onActionComplete }: ActionButtonsProps) {
 
   // Determine which buttons to show based on dealStage
   const showApproveQuote = !isAdmin && hasQuote && isQuoteSentStage;
-  const showRequestRates = !isAdmin && hasQuote && isQuoteSentStage;
-  const showCompleteSignup = !isAdmin && hasQuote && needsSignup;
+  const showRequestRates = !isAdmin && hasQuote && isQuoteSentStage && !isFundingDeal; // No rate negotiation for funding
+  const showCompleteSignup = !isAdmin && hasQuote && needsSignup && !isFundingDeal; // Funding skips signup form
   const showSendToClient = isAdmin && needsAdminSend;
   // Show reminder button when deal is at agreement_sent stage (waiting for client to sign)
   const showSendReminder = !isAdmin && dealStage === 'agreement_sent';
@@ -216,7 +235,9 @@ function ActionButtons({ deal, onActionComplete }: ActionButtonsProps) {
             data-testid="button-approve-quote"
           >
             <ThumbsUp className="h-4 w-4 mr-2" />
-            {approveQuoteMutation.isPending ? "Approving..." : "Approve & Sign Up"}
+            {approveQuoteMutation.isPending
+              ? (isFundingDeal ? "Submitting..." : "Approving...")
+              : (isFundingDeal ? "Proceed with Application" : "Approve & Sign Up")}
           </Button>
         )}
 
@@ -918,6 +939,24 @@ export default function UnifiedDealModal({ isOpen, onClose, deal, viewMode = 'pa
                   </div>
                 </div>
               )}
+              {isFundingDeal && deal.fundingAmount && (
+                <div className="flex items-center gap-3">
+                  <Banknote className="h-4 w-4 text-green-400" />
+                  <div>
+                    <p className="text-xs text-gray-400">Funding Amount Requested</p>
+                    <p className="text-sm text-green-400 font-semibold">{deal.fundingAmount}</p>
+                  </div>
+                </div>
+              )}
+              {isFundingDeal && deal.currentCardProvider && (
+                <div className="flex items-center gap-3">
+                  <CreditCard className="h-4 w-4 text-teal-400" />
+                  <div>
+                    <p className="text-xs text-gray-400">Current Card Provider</p>
+                    <p className="text-sm text-white capitalize">{deal.currentCardProvider}</p>
+                  </div>
+                </div>
+              )}
               {deal.selectedProducts && deal.selectedProducts.length > 0 && (
                 <div className="flex items-start gap-3 col-span-full">
                   <CreditCard className="h-4 w-4 text-teal-400 mt-0.5" />
@@ -1067,12 +1106,23 @@ export default function UnifiedDealModal({ isOpen, onClose, deal, viewMode = 'pa
             </div>
           )}
 
-          {!hasQuote && !hasRates && (
+          {!hasQuote && !hasRates && !isFundingDeal && (
             <div className="bg-[#0d2137] rounded-2xl p-6 border border-[#1e3a5f] text-center">
               <Clock className="h-12 w-12 text-teal-400 mx-auto mb-4" />
               <h3 className="text-xl font-bold mb-2 text-white">Quote in Progress</h3>
               <p className="text-gray-400">
                 Our team is preparing a competitive quote for your client. You'll see the rates and savings here once ready.
+              </p>
+            </div>
+          )}
+
+          {/* Funding deal waiting state - shown when no quote yet for funding deals */}
+          {!hasQuote && isFundingDeal && (
+            <div className="bg-[#0d2137] rounded-2xl p-6 border border-[#1e3a5f] text-center">
+              <Banknote className="h-12 w-12 text-green-400 mx-auto mb-4" />
+              <h3 className="text-xl font-bold mb-2 text-white">Funding Request Submitted</h3>
+              <p className="text-gray-400">
+                Your funding request has been submitted. Our team is reviewing the details and will prepare your funding application shortly.
               </p>
             </div>
           )}
