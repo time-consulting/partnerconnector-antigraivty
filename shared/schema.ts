@@ -143,6 +143,8 @@ export const deals = pgTable("deals", {
   commissionPercentage: decimal("commission_percentage", { precision: 5, scale: 2 }).notNull().default("60.00"), // Commission % for this referral level
   // Quote and commission tracking
   quoteGenerated: boolean("quote_generated").default(false),
+  quoteType: varchar("quote_type"), // card_payments, business_funding, funding_with_cards
+  quoteData: jsonb("quote_data"), // Stores full quote payload (rates/devices for cards, instructions for funding)
   quoteAmount: decimal("quote_amount", { precision: 10, scale: 2 }),
   clientApproved: boolean("client_approved").default(false),
   status: varchar("status").notNull().default("submitted"), // submitted, pending, quoted, approved, rejected, completed

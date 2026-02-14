@@ -7,13 +7,14 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { 
-  Mail, Phone, MapPin, Building2, Calendar, Banknote, 
+import {
+  Mail, Phone, MapPin, Building2, Calendar, Banknote,
   FileText, Package, CreditCard, DollarSign, TrendingUp,
   Download, Eye, Upload, ArrowLeft, ArrowRight, ClipboardCheck, User, FileCheck, Loader2
 } from "lucide-react";
 import { format } from "date-fns";
 import QuoteBuilder from "./quote-builder";
+import FundingQuoteBuilder from "./funding-quote-builder";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 
 interface DealDetailsModalProps {
@@ -31,10 +32,10 @@ function AdminCommissionSection({ deal, onComplete }: { deal: any; onComplete: (
   const [currency, setCurrency] = useState("GBP");
   const [evidenceUrl, setEvidenceUrl] = useState("");
   const [notes, setNotes] = useState("");
-  
+
   const dealStage = deal.dealStage || deal.status || 'submitted';
   const isLiveStage = ['live', 'live_confirm_ltr'].includes(dealStage);
-  
+
   // Check if payment already exists for this deal
   const { data: paymentStatus, isLoading } = useQuery({
     queryKey: ['/api/admin/deals', deal.id, 'payment-status'],
@@ -69,10 +70,10 @@ function AdminCommissionSection({ deal, onComplete }: { deal: any; onComplete: (
       onComplete();
     },
     onError: (error: any) => {
-      toast({ 
-        title: "Error", 
-        description: error?.message || "Failed to create commission. Please try again.", 
-        variant: "destructive" 
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to create commission. Please try again.",
+        variant: "destructive"
       });
     }
   });
@@ -97,7 +98,7 @@ function AdminCommissionSection({ deal, onComplete }: { deal: any; onComplete: (
       approved: 'bg-blue-600 text-white',
       paid: 'bg-green-600 text-white',
     };
-    
+
     return (
       <div className="flex-1 p-4 bg-slate-800/50 rounded-lg border border-teal-500/30">
         <div className="flex items-center justify-between mb-3">
@@ -142,7 +143,7 @@ function AdminCommissionSection({ deal, onComplete }: { deal: any; onComplete: (
           Ready
         </Badge>
       </div>
-      
+
       {!showForm ? (
         <Button
           onClick={() => setShowForm(true)}
@@ -179,7 +180,7 @@ function AdminCommissionSection({ deal, onComplete }: { deal: any; onComplete: (
               </select>
             </div>
           </div>
-          
+
           {/* Split Preview */}
           {grossNum > 0 && (
             <div className="p-3 bg-slate-900/50 rounded border border-slate-700">
@@ -194,7 +195,7 @@ function AdminCommissionSection({ deal, onComplete }: { deal: any; onComplete: (
               </div>
             </div>
           )}
-          
+
           <div>
             <label className="text-xs text-slate-400 mb-1 block">Evidence URL (optional)</label>
             <Input
@@ -205,7 +206,7 @@ function AdminCommissionSection({ deal, onComplete }: { deal: any; onComplete: (
               className="bg-slate-900 border-slate-700 text-white"
             />
           </div>
-          
+
           <div>
             <label className="text-xs text-slate-400 mb-1 block">Notes (optional)</label>
             <Input
@@ -216,7 +217,7 @@ function AdminCommissionSection({ deal, onComplete }: { deal: any; onComplete: (
               className="bg-slate-900 border-slate-700 text-white"
             />
           </div>
-          
+
           <div className="flex gap-2">
             <Button
               onClick={() => createCommissionMutation.mutate()}
@@ -315,15 +316,15 @@ export default function DealDetailsModal({ isOpen, onClose, deal, showQuoteBuild
       if (!response.ok) {
         throw new Error('Failed to move deal forward');
       }
-      
+
       queryClient.invalidateQueries({ queryKey: ['/api/admin/deals'] });
       queryClient.invalidateQueries({ queryKey: ['/api/deals'] });
-      
+
       toast({
         title: "Deal Moved Forward",
         description: `${deal.businessName} has been moved to "Agreement Sent" stage`,
       });
-      
+
       onClose();
     } catch (error) {
       toast({
@@ -537,6 +538,10 @@ export default function DealDetailsModal({ isOpen, onClose, deal, showQuoteBuild
       );
     }
 
+    const isFundingDeal = deal.productType === 'business_funding' ||
+      (deal.selectedProducts && Array.isArray(deal.selectedProducts) && deal.selectedProducts.includes('business-funding')) ||
+      deal.quoteType === 'business_funding' || deal.quoteType === 'funding_with_cards';
+
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="max-w-[100vw] w-[100vw] h-[100vh] max-h-[100vh] p-0 overflow-hidden flex flex-col">
@@ -552,17 +557,27 @@ export default function DealDetailsModal({ isOpen, onClose, deal, showQuoteBuild
                 Back to Details
               </Button>
               <DialogTitle className="text-2xl font-bold">
-                Generate Quote for {deal.businessName}
+                {isFundingDeal ? 'Business Funding Quote' : 'Generate Quote'} for {deal.businessName}
               </DialogTitle>
             </div>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto p-6">
-            <QuoteBuilder
-              dealId={deal.id}
-              businessName={deal.businessName}
-              onQuoteCreated={handleQuoteCreated}
-              onCancel={() => setShowQuoteBuilder(false)}
-            />
+            {isFundingDeal ? (
+              <FundingQuoteBuilder
+                dealId={deal.id}
+                businessName={deal.businessName}
+                deal={deal}
+                onQuoteCreated={handleQuoteCreated}
+                onCancel={() => setShowQuoteBuilder(false)}
+              />
+            ) : (
+              <QuoteBuilder
+                dealId={deal.id}
+                businessName={deal.businessName}
+                onQuoteCreated={handleQuoteCreated}
+                onCancel={() => setShowQuoteBuilder(false)}
+              />
+            )}
           </div>
         </DialogContent>
       </Dialog>
@@ -768,6 +783,44 @@ export default function DealDetailsModal({ isOpen, onClose, deal, showQuoteBuild
             </CardContent>
           </Card>
 
+          {/* Business Funding Details Card - Shows for funding deals */}
+          {deal.productType === 'business_funding' && (
+            <Card className="border-green-500 border-2">
+              <CardHeader className="bg-green-50">
+                <CardTitle className="flex items-center gap-2 text-green-700">
+                  <Banknote className="h-5 w-5" />
+                  Business Funding Details
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="grid grid-cols-2 gap-4 pt-4">
+                {deal.fundingAmount && (
+                  <div>
+                    <label className="text-sm text-gray-600">Funding Amount Requested</label>
+                    <p className="font-bold text-xl text-green-600">{deal.fundingAmount}</p>
+                  </div>
+                )}
+                <div>
+                  <label className="text-sm text-gray-600">Takes Card Payments</label>
+                  <p className="font-medium">{deal.takesCardPayments ? 'Yes' : 'No'}</p>
+                </div>
+                {deal.takesCardPayments && deal.currentCardProvider && (
+                  <div>
+                    <label className="text-sm text-gray-600">Current Card Provider</label>
+                    <Badge className={deal.currentCardProvider === 'dojo' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}>
+                      {deal.currentCardProvider === 'dojo' ? 'Dojo (Existing)' : deal.currentCardProvider.replace(/_/g, ' ')}
+                    </Badge>
+                  </div>
+                )}
+                {deal.quoteType && (
+                  <div>
+                    <label className="text-sm text-gray-600">Quote Type</label>
+                    <p className="font-medium capitalize">{deal.quoteType.replace(/_/g, ' ')}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           {/* Uploaded Documents Card */}
           {deal.billUploads && deal.billUploads.length > 0 && (
             <Card>
@@ -789,7 +842,7 @@ export default function DealDetailsModal({ isOpen, onClose, deal, showQuoteBuild
                         <div className="flex-1">
                           <p className="font-medium text-sm">{file.fileName}</p>
                           <p className="text-xs text-gray-500">
-                            {(file.fileSize / 1024).toFixed(1)} KB • 
+                            {(file.fileSize / 1024).toFixed(1)} KB •
                             {file.uploadedAt && ` Uploaded ${format(new Date(file.uploadedAt), "MMM dd, yyyy")}`}
                           </p>
                         </div>
@@ -898,7 +951,7 @@ export default function DealDetailsModal({ isOpen, onClose, deal, showQuoteBuild
                 Generate Quote
               </Button>
             )}
-            
+
             {deal.dealStage === 'quote_approved' && (
               <>
                 <Button
@@ -923,16 +976,16 @@ export default function DealDetailsModal({ isOpen, onClose, deal, showQuoteBuild
 
             {/* Live Confirm LTR Stage - Commission Creation */}
             {['live', 'live_confirm_ltr'].includes(deal.dealStage) && (
-              <AdminCommissionSection deal={deal} onComplete={() => {}} />
+              <AdminCommissionSection deal={deal} onComplete={() => { }} />
             )}
-            
+
             {/* Fallback for other stages - show basic view */}
             {deal.dealStage !== 'quote_request_received' && deal.dealStage !== 'quote_approved' && !['live', 'live_confirm_ltr'].includes(deal.dealStage) && (
               <div className="flex-1 p-4 bg-gray-50 rounded text-center text-gray-600">
                 Stage: {deal.dealStage} - Actions for this stage coming soon
               </div>
             )}
-            
+
             <Button
               onClick={onClose}
               variant="outline"

@@ -27,7 +27,8 @@ import {
   ThumbsUp,
   ArrowRight,
   TrendingDown,
-  Bell
+  Bell,
+  Shield
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -794,6 +795,9 @@ export default function UnifiedDealModal({ isOpen, onClose, deal, viewMode = 'pa
   const hasQuote = !!deal.quoteId || !!deal.quote;
   const hasRates = deal.debitCardRate || deal.creditCardRate;
   const hasDevices = deal.devices && deal.devices.length > 0;
+  const isFundingDeal = deal.productType === 'business_funding' ||
+    (deal.selectedProducts && Array.isArray(deal.selectedProducts) && deal.selectedProducts.includes('business-funding')) ||
+    deal.quoteType === 'business_funding' || deal.quoteType === 'funding_with_cards';
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -932,7 +936,69 @@ export default function UnifiedDealModal({ isOpen, onClose, deal, viewMode = 'pa
             </div>
           </div>
 
-          {deal.estimatedMonthlySaving && (
+          {/* Business Funding Overview - shows for funding deals instead of card rates */}
+          {isFundingDeal && hasQuote && (
+            <div className="bg-[#0d2137] rounded-2xl p-6 border border-[#1e3a5f]">
+              <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-white">
+                <Banknote className="h-5 w-5 text-green-400" />
+                Business Funding Application
+              </h3>
+
+              <div className="bg-gradient-to-r from-green-900/30 to-teal-900/30 rounded-xl p-5 border border-green-500/30 mb-5">
+                <p className="text-green-200 mb-1 text-sm font-medium">What happens next</p>
+                <p className="text-white text-sm">
+                  Complete the application form below to request your business funding quotes. This is a soft search only and will not affect your credit score.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 w-8 h-8 bg-teal-500/20 text-teal-400 rounded-full flex items-center justify-center text-sm font-bold">1</div>
+                  <div>
+                    <p className="text-white font-medium">Complete the application form</p>
+                    <p className="text-gray-400 text-sm">Submit your details to request business funding</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 w-8 h-8 bg-teal-500/20 text-teal-400 rounded-full flex items-center justify-center text-sm font-bold">2</div>
+                  <div>
+                    <p className="text-white font-medium">Receive 3 funding quotes</p>
+                    <p className="text-gray-400 text-sm">This is a soft search only — it will not appear on your credit file</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 w-8 h-8 bg-teal-500/20 text-teal-400 rounded-full flex items-center justify-center text-sm font-bold">3</div>
+                  <div>
+                    <p className="text-white font-medium">No obligation to proceed</p>
+                    <p className="text-gray-400 text-sm">You can choose not to proceed if the funding amounts don't suit you</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 w-8 h-8 bg-teal-500/20 text-teal-400 rounded-full flex items-center justify-center text-sm font-bold">4</div>
+                  <div>
+                    <p className="text-white font-medium">Specialised funding team</p>
+                    <p className="text-gray-400 text-sm">A dedicated funding specialist will contact you directly with your quotes</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 w-8 h-8 bg-teal-500/20 text-teal-400 rounded-full flex items-center justify-center text-sm font-bold">5</div>
+                  <div>
+                    <p className="text-white font-medium">Instant decision</p>
+                    <p className="text-gray-400 text-sm">If you proceed, your application goes straight to approved or declined — no further credit checks</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-5 flex items-center gap-3 bg-amber-900/20 rounded-lg p-3 border border-amber-500/30">
+                <Shield className="h-5 w-5 text-amber-400 flex-shrink-0" />
+                <p className="text-amber-200 text-sm">
+                  <strong>Soft search only</strong> — requesting quotes will not affect your credit score
+                </p>
+              </div>
+            </div>
+          )}
+
+          {!isFundingDeal && deal.estimatedMonthlySaving && (
             <div className="bg-gradient-to-br from-teal-600 to-teal-700 rounded-2xl p-6 text-white shadow-lg">
               <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div>
@@ -952,7 +1018,7 @@ export default function UnifiedDealModal({ isOpen, onClose, deal, viewMode = 'pa
             </div>
           )}
 
-          {hasRates && (
+          {!isFundingDeal && hasRates && (
             <div className="bg-[#0d2137] rounded-2xl p-6 border border-[#1e3a5f]">
               <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-white">
                 <TrendingUp className="h-5 w-5 text-teal-400" />

@@ -165,12 +165,16 @@ export default function SubmitDeal() {
 
       return deal;
     },
-    onSuccess: () => {
+    onSuccess: (deal: any) => {
+      const isAutoQuoted = deal?.dealStage === 'quote_sent' && deal?.quoteType === 'business_funding';
       toast({
-        title: "Deal Submitted!",
-        description: "Your deal has been submitted successfully.",
+        title: isAutoQuoted ? "Deal Submitted & Quote Ready!" : "Deal Submitted!",
+        description: isAutoQuoted
+          ? "Your funding request has been submitted. View your deal to see next steps and complete the application."
+          : "Your deal has been submitted successfully.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/deals"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/deals/with-quotes"] });
       setTimeout(() => {
         window.location.href = "/";
       }, 2000);
@@ -230,6 +234,22 @@ export default function SubmitDeal() {
   };
 
   const handleSubmit = () => {
+    // Determine product type based on selected services
+    // Priority: business_funding > card_payments > others
+    let determinedProductType = 'card_payments';
+    if (selectedServices.includes('business-funding')) {
+      determinedProductType = 'business_funding';
+    } else if (selectedServices.includes('card-payments')) {
+      determinedProductType = 'card_payments';
+    } else if (selectedServices.length > 0) {
+      const serviceToProductType: Record<string, string> = {
+        'bookings': 'bookings',
+        'websites': 'websites',
+        'ai-marketing': 'ai_marketing',
+      };
+      determinedProductType = serviceToProductType[selectedServices[0]] || 'card_payments';
+    }
+
     const dealData: any = {
       businessName,
       contactName,
@@ -238,6 +258,7 @@ export default function SubmitDeal() {
       businessAddress,
       businessTypeId: businessTypeId || null,
       selectedProducts: selectedServices,
+      productType: determinedProductType,
       monthlyVolume: selectedVolume,
       cardMachineQuantity: cardMachines ? parseInt(cardMachines) || 5 : 0,
       fundingAmount: fundingAmount,

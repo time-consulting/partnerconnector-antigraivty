@@ -223,8 +223,8 @@ export default function AdminMessagesPage() {
                     <Card
                       key={thread.dealId}
                       className={`bg-card border-border transition-all duration-200 ${hasUnread
-                          ? 'border-l-4 border-l-primary shadow-md shadow-primary/5'
-                          : ''
+                        ? 'border-l-4 border-l-primary shadow-md shadow-primary/5'
+                        : ''
                         }`}
                     >
                       <CardContent className="p-0">
@@ -290,8 +290,8 @@ export default function AdminMessagesPage() {
                                   >
                                     <div
                                       className={`max-w-[75%] rounded-xl px-4 py-2.5 ${isAdmin
-                                          ? 'bg-primary/20 text-foreground rounded-br-sm'
-                                          : 'bg-secondary text-foreground rounded-bl-sm'
+                                        ? 'bg-primary/20 text-foreground rounded-br-sm'
+                                        : 'bg-secondary text-foreground rounded-bl-sm'
                                         }`}
                                     >
                                       <div className="flex items-center gap-2 mb-1">

@@ -35,17 +35,17 @@ const quoteBuilderSchema = z.object({
   visaBusinessDebitRate: z.string().default("1.99"),
   otherBusinessDebitRate: z.string().default("1.99"),
   amexRate: z.string().default("1.90"),
-  
+
   // Fees
   secureTransactionFee: z.string().min(1, "Required"), // in pence
-  
+
   // Savings & Buyout
   estimatedMonthlySaving: z.string().min(1, "Required"),
   buyoutAmount: z.string().min(1, "Required"), // 3000 or 500
-  
+
   // Device payment type
   devicePaymentType: z.enum(["pay_once", "pay_monthly"]),
-  
+
   // Optional extras
   hardwareCare: z.boolean().default(false),
   settlementType: z.enum(["5_day", "7_day"]).default("5_day"),
@@ -73,7 +73,7 @@ interface QuoteBuilderProps {
 export default function QuoteBuilder({ dealId, businessName, onQuoteCreated, onCancel, apiEndpoint }: QuoteBuilderProps) {
   const [devices, setDevices] = useState<Device[]>([]);
   const [devicePaymentType, setDevicePaymentType] = useState<"pay_once" | "pay_monthly">("pay_monthly");
-  
+
   const form = useForm<QuoteBuilderFormData>({
     resolver: zodResolver(quoteBuilderSchema),
     defaultValues: {
@@ -97,19 +97,19 @@ export default function QuoteBuilder({ dealId, businessName, onQuoteCreated, onC
   const addDevice = (type: "dojo_go" | "dojo_pocket") => {
     const pricing = DEVICE_PRICING[type];
     const price = devicePaymentType === "pay_once" ? pricing.payOnce : pricing.payMonthly;
-    
+
     const existing = devices.find(d => d.type === type);
     if (existing) {
-      setDevices(devices.map(d => 
-        d.type === type 
+      setDevices(devices.map(d =>
+        d.type === type
           ? { ...d, quantity: d.quantity + 1, price: price * (d.quantity + 1) }
           : d
       ));
     } else {
-      setDevices([...devices, { 
-        type, 
+      setDevices([...devices, {
+        type,
         name: pricing.name,
-        quantity: 1, 
+        quantity: 1,
         price,
         monthlyPrice: pricing.payMonthly
       }]);
@@ -122,8 +122,8 @@ export default function QuoteBuilder({ dealId, businessName, onQuoteCreated, onC
     if (existing && existing.quantity > 1) {
       const pricing = DEVICE_PRICING[type];
       const price = devicePaymentType === "pay_once" ? pricing.payOnce : pricing.payMonthly;
-      setDevices(devices.map(d => 
-        d.type === type 
+      setDevices(devices.map(d =>
+        d.type === type
           ? { ...d, quantity: d.quantity - 1, price: price * (d.quantity - 1) }
           : d
       ));
@@ -137,8 +137,8 @@ export default function QuoteBuilder({ dealId, businessName, onQuoteCreated, onC
     setDevices(devices.map(device => {
       const pricing = DEVICE_PRICING[device.type];
       const unitPrice = devicePaymentType === "pay_once" ? pricing.payOnce : pricing.payMonthly;
-      return { 
-        ...device, 
+      return {
+        ...device,
         name: pricing.name,
         price: unitPrice * device.quantity,
         monthlyPrice: pricing.payMonthly
@@ -149,18 +149,18 @@ export default function QuoteBuilder({ dealId, businessName, onQuoteCreated, onC
   // Calculate totals
   const calculateTotals = () => {
     const deviceTotal = devices.reduce((sum, d) => sum + d.price, 0);
-    const hardwareCareTotal = form.watch("hardwareCare") 
-      ? devices.reduce((sum, d) => sum + (5 * d.quantity), 0) 
+    const hardwareCareTotal = form.watch("hardwareCare")
+      ? devices.reduce((sum, d) => sum + (5 * d.quantity), 0)
       : 0;
     const settlementFee = form.watch("settlementType") === "7_day" ? 10 : 0;
     const dojoPlanFee = form.watch("dojoPlan") ? 11.99 : 0;
-    
-    const monthlyTotal = devicePaymentType === "pay_monthly" 
+
+    const monthlyTotal = devicePaymentType === "pay_monthly"
       ? deviceTotal + hardwareCareTotal + settlementFee + dojoPlanFee
       : hardwareCareTotal + settlementFee + dojoPlanFee;
-      
+
     const oneTimeTotal = devicePaymentType === "pay_once" ? deviceTotal : 0;
-    
+
     return { monthlyTotal, oneTimeTotal, deviceTotal };
   };
 
@@ -168,10 +168,11 @@ export default function QuoteBuilder({ dealId, businessName, onQuoteCreated, onC
 
   const onSubmit = async (data: QuoteBuilderFormData) => {
     try {
-      const endpoint = apiEndpoint || "/api/admin/quotes/create";
+      const endpoint = apiEndpoint || `/api/admin/deals/${dealId}/generate-quote`;
       const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           dealId,
           ...data,
@@ -179,7 +180,7 @@ export default function QuoteBuilder({ dealId, businessName, onQuoteCreated, onC
           devicePaymentType,
         }),
       });
-      
+
       if (response.ok) {
         const result = await response.json();
         onQuoteCreated(result.quoteId);
@@ -385,14 +386,14 @@ export default function QuoteBuilder({ dealId, businessName, onQuoteCreated, onC
             {/* Device Selection */}
             <div className="space-y-4">
               <Label className="text-lg font-semibold">Select Devices</Label>
-              
+
               {/* Dojo Go */}
               <div className="flex items-center justify-between p-4 border-2 rounded-xl hover:border-blue-400 transition-colors">
                 <div className="flex-1">
                   <p className="font-semibold text-lg">{DEVICE_PRICING.dojo_go.name}</p>
                   <p className="text-gray-600">
-                    {devicePaymentType === "pay_once" 
-                      ? `£${DEVICE_PRICING.dojo_go.payOnce} one-time` 
+                    {devicePaymentType === "pay_once"
+                      ? `£${DEVICE_PRICING.dojo_go.payOnce} one-time`
                       : `£${DEVICE_PRICING.dojo_go.payMonthly}/month`}
                   </p>
                 </div>
@@ -430,8 +431,8 @@ export default function QuoteBuilder({ dealId, businessName, onQuoteCreated, onC
                 <div className="flex-1">
                   <p className="font-semibold text-lg">{DEVICE_PRICING.dojo_pocket.name}</p>
                   <p className="text-gray-600">
-                    {devicePaymentType === "pay_once" 
-                      ? `£${DEVICE_PRICING.dojo_pocket.payOnce} one-time` 
+                    {devicePaymentType === "pay_once"
+                      ? `£${DEVICE_PRICING.dojo_pocket.payOnce} one-time`
                       : `£${DEVICE_PRICING.dojo_pocket.payMonthly}/month`}
                   </p>
                 </div>
