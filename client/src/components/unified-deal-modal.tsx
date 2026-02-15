@@ -38,6 +38,7 @@ import {
   getPartnerProgressSteps,
   getAdminProgressSteps,
   mapDealToPartnerProgress,
+  getPartnerStageLabel,
   STAGE_CONFIG,
   type DealStage
 } from "@shared/dealWorkflow";
@@ -811,7 +812,7 @@ export default function UnifiedDealModal({ isOpen, onClose, deal, viewMode = 'pa
   const currentProgressIndex = isAdminView ? (adminStageIndex === -1 ? 0 : adminStageIndex) : (partnerStageIndex === -1 ? 0 : partnerStageIndex);
   const currentProgressLabel = isAdminView
     ? (STAGE_CONFIG[currentStage]?.adminLabel || 'Processing')
-    : currentPartnerProgress.label;
+    : getPartnerStageLabel(currentStage, deal.productType);
 
   const hasQuote = !!deal.quoteId || !!deal.quote;
   const hasRates = deal.debitCardRate || deal.creditCardRate;

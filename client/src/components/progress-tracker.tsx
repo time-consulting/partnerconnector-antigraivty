@@ -37,6 +37,8 @@ import { format } from "date-fns";
 import {
   getPartnerProgressSteps,
   mapDealToPartnerProgress,
+  getPartnerStageLabel,
+  getApprovedStepLabel,
   type DealStage
 } from "@shared/dealWorkflow";
 
@@ -51,12 +53,15 @@ const PROGRESS_ICONS: Record<string, typeof FileText> = {
   declined: XCircle,
 };
 
-const PROGRESS_REQUIREMENTS: Record<string, string> = {
+const PROGRESS_REQUIREMENTS: Record<string, string | ((productType?: string) => string)> = {
   submitted: "We'll prepare a competitive quote for your client",
   quote_received: "Review the quote and approve to proceed",
   application_submitted: "Your application is being processed",
   in_progress: "Documents are being reviewed",
-  approved: "Terminals are on the way to your client",
+  approved: (productType?: string) =>
+    productType === 'business_funding'
+      ? "Funding has been agreed for your client"
+      : "Terminals are on the way to your client",
   live: "Deal is live - commission will be calculated",
   complete: "Congratulations! This deal is complete",
 };
@@ -73,6 +78,7 @@ interface ProgressTrackerProps {
     businessEmail: string;
     status: string;
     dealStage?: string;
+    productType?: string;
     submittedAt: string | Date;
     selectedProducts: string[];
     estimatedCommission?: string;
@@ -220,10 +226,16 @@ export default function ProgressTracker({ isOpen, onClose, deal, viewMode = 'par
       };
     }
     const step = currentPartnerProgress;
+    const reqEntry = PROGRESS_REQUIREMENTS[step.id];
+    const requirement = typeof reqEntry === 'function'
+      ? reqEntry(deal?.productType)
+      : reqEntry || "Processing your deal";
     return {
-      label: step.label,
+      label: step.id === 'approved'
+        ? getApprovedStepLabel(deal?.productType)
+        : step.label,
       description: step.description,
-      requirement: PROGRESS_REQUIREMENTS[step.id] || "Processing your deal",
+      requirement,
       icon: PROGRESS_ICONS[step.id] || FileText,
     };
   };
@@ -372,12 +384,12 @@ export default function ProgressTracker({ isOpen, onClose, deal, viewMode = 'par
                         <div className="flex-1 min-w-0 pt-1">
                           <div className="flex items-center justify-between">
                             <h4 className={`font-medium ${status === "completed"
-                                ? "text-primary"
-                                : status === "current"
-                                  ? "text-foreground"
-                                  : "text-muted-foreground"
+                              ? "text-primary"
+                              : status === "current"
+                                ? "text-foreground"
+                                : "text-muted-foreground"
                               }`}>
-                              {step.label}
+                              {step.id === 'approved' ? getApprovedStepLabel(deal?.productType) : step.label}
                             </h4>
                             {status === "completed" && (
                               <Badge variant="outline" className="text-xs border-primary/50 text-primary">

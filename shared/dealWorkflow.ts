@@ -279,6 +279,41 @@ export const PRODUCT_CONFIG: Record<ProductType, { label: string; icon: string; 
   ai_marketing: { label: 'AI Marketing', icon: 'Sparkles', color: 'text-pink-400' },
 };
 
+// Product-specific label overrides for partner-facing badges
+// Each product type can override any stage's partnerLabel
+export const PRODUCT_STAGE_LABELS: Partial<Record<ProductType, Partial<Record<DealStage, string>>>> = {
+  business_funding: {
+    quote_approved: 'Funding Application Approved',
+    signup_submitted: 'Funding Application Submitted',
+    agreement_sent: 'Funding Agreement Sent',
+    under_review: 'Under Review by Funding Team',
+    approved: 'Funding Agreed',
+    live_confirm_ltr: 'Funds Received – Live',
+  },
+  // Future products can add their own overrides here:
+  // bookings: { approved: 'Bookings Setup Complete', ... },
+  // websites: { approved: 'Website Live', ... },
+};
+
+/**
+ * Get the correct partner-facing label for a deal stage, considering the product type.
+ * Falls back to the default STAGE_CONFIG.partnerLabel if no product override exists.
+ */
+export function getPartnerStageLabel(stage: DealStage, productType?: string | null): string {
+  if (productType && PRODUCT_STAGE_LABELS[productType as ProductType]?.[stage]) {
+    return PRODUCT_STAGE_LABELS[productType as ProductType]![stage]!;
+  }
+  return STAGE_CONFIG[stage]?.partnerLabel || stage;
+}
+
+/**
+ * Get the correct approved step label for the partner progress stepper.
+ */
+export function getApprovedStepLabel(productType?: string | null): string {
+  if (productType === 'business_funding') return 'Funding Agreed';
+  return 'Approved (Dojo)';
+}
+
 export function getStagesForAdmin(): StageConfig[] {
   return DEAL_STAGES.map(id => STAGE_CONFIG[id]).sort((a, b) => a.order - b.order);
 }
@@ -290,9 +325,10 @@ export function getStagesForPartner(): StageConfig[] {
     .sort((a, b) => a.order - b.order);
 }
 
-export function getStageLabel(stage: DealStage, role: UserRole): string {
+export function getStageLabel(stage: DealStage, role: UserRole, productType?: string | null): string {
+  if (role === 'partner') return getPartnerStageLabel(stage, productType);
   const config = STAGE_CONFIG[stage];
-  return role === 'admin' ? config.adminLabel : config.partnerLabel;
+  return config.adminLabel;
 }
 
 export function getCTAsForStage(stage: DealStage, role: UserRole): StageCTA[] {
@@ -311,7 +347,6 @@ export interface PartnerTab {
   id: string;
   label: string;
   stages: DealStage[];
-  requiresSignupCompleted?: boolean;
   color: string;
 }
 

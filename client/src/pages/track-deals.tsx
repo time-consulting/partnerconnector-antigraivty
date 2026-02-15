@@ -29,7 +29,7 @@ import Sidebar from "@/components/sidebar";
 import UnifiedDealModal from "@/components/unified-deal-modal";
 import { Link } from "wouter";
 import { format } from "date-fns";
-import { STAGE_CONFIG, PRODUCT_TYPES, PRODUCT_CONFIG, PARTNER_TAB_CONFIG, type DealStage } from "@shared/dealWorkflow";
+import { STAGE_CONFIG, PRODUCT_TYPES, PRODUCT_CONFIG, PARTNER_TAB_CONFIG, getPartnerStageLabel, type DealStage } from "@shared/dealWorkflow";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const TAB_ICONS: Record<string, any> = {
@@ -60,16 +60,23 @@ const STAGE_ICONS: Record<string, any> = {
   declined: XCircle,
 };
 
-const STATUS_DISPLAY: Record<string, { label: string; color: string; icon: any }> = Object.fromEntries(
-  Object.entries(STAGE_CONFIG).map(([id, config]) => [
-    id,
-    {
-      label: config.partnerLabel,
-      color: `${config.bgColor.replace('bg-', 'bg-').replace('/30', '/20')} ${config.iconColor} ${config.borderColor}`,
-      icon: STAGE_ICONS[id] || FileText,
-    },
-  ])
-);
+// Get display config for a deal's stage badge (color + icon are stage-based, label is product-aware)
+function getStatusDisplay(dealStage: string, productType?: string | null) {
+  const config = STAGE_CONFIG[dealStage as DealStage];
+  if (!config) {
+    const fallback = STAGE_CONFIG.quote_request_received;
+    return {
+      label: getPartnerStageLabel(dealStage as DealStage, productType),
+      color: `${fallback.bgColor.replace('/30', '/20')} ${fallback.iconColor} ${fallback.borderColor}`,
+      icon: STAGE_ICONS[dealStage] || FileText,
+    };
+  }
+  return {
+    label: getPartnerStageLabel(dealStage as DealStage, productType),
+    color: `${config.bgColor.replace('/30', '/20')} ${config.iconColor} ${config.borderColor}`,
+    icon: STAGE_ICONS[dealStage] || FileText,
+  };
+}
 
 const IN_PROGRESS_STAGES = ['agreement_sent', 'signed_awaiting_docs', 'under_review'];
 const STAGE_NOTIFICATIONS: Record<string, { message: string; bgColor: string; textColor: string }> = {
@@ -110,12 +117,6 @@ export default function TrackDeals() {
     if (!tabConfig) return filteredDeals;
 
     if (tabId === 'all') return filteredDeals;
-
-    if (tabConfig.requiresSignupCompleted) {
-      return filteredDeals.filter((deal: any) =>
-        deal.signupCompletedAt && tabConfig.stages.includes(deal.dealStage)
-      );
-    }
 
     return filteredDeals.filter((deal: any) => tabConfig.stages.includes(deal.dealStage));
   };
@@ -280,7 +281,7 @@ export default function TrackDeals() {
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {tabDeals.map((deal: any) => {
-                          const statusConfig = STATUS_DISPLAY[deal.dealStage] || STATUS_DISPLAY.quote_request_received;
+                          const statusConfig = getStatusDisplay(deal.dealStage, deal.productType);
                           const Icon = statusConfig.icon;
 
                           return (
