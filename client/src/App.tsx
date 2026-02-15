@@ -11,6 +11,7 @@ import Landing from "@/pages/landing";
 import Dashboard from "@/pages/dashboard";
 import LoginPage from "@/pages/login";
 import ImpersonationBanner from "@/components/impersonation-banner";
+import DevVersionBanner from "@/components/dev-version-banner";
 
 const SubmitDeal = lazy(() => import("@/pages/submit-deal"));
 const UploadBills = lazy(() => import("@/pages/upload-bills"));
@@ -149,6 +150,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 function App() {
   return (
     <ErrorBoundary fallbackMessage="The app encountered an unexpected error. Please try reloading.">
+      <DevVersionBanner />
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <Router>
