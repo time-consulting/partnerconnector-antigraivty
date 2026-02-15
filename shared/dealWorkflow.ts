@@ -471,14 +471,13 @@ export const PARTNER_TAB_CONFIG: PartnerTab[] = [
   {
     id: 'quote_received',
     label: 'Quote Received',
-    stages: ['quote_sent', 'quote_approved'],
+    stages: ['quote_sent'],
     color: 'bg-purple-500',
   },
   {
     id: 'application_submitted',
     label: 'Application Submitted',
-    stages: ['signup_submitted', 'agreement_sent', 'signed_awaiting_docs', 'under_review'],
-    requiresSignupCompleted: true,
+    stages: ['quote_approved', 'signup_submitted'],
     color: 'bg-lime-500',
   },
   {
