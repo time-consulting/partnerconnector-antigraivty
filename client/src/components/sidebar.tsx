@@ -16,7 +16,8 @@ import {
   Contact,
   Lightbulb,
   Briefcase,
-  TrendingUp
+  TrendingUp,
+  Rocket
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/queryClient";
@@ -104,6 +105,7 @@ export default function Sidebar({ onExpandChange }: SidebarProps = {}) {
       ]
     },
     { icon: MessageSquare, label: "Messages", path: "/messages" },
+    { icon: Rocket, label: "Grow Your Business", path: "/grow-your-business" },
     {
       icon: TrendingUp,
       label: "Pipeline",

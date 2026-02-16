@@ -49,6 +49,7 @@ const ForgotPasswordPage = lazy(() => import("@/pages/forgot-password"));
 const ResetPasswordPage = lazy(() => import("@/pages/reset-password"));
 const BookDemo = lazy(() => import("@/pages/book-demo"));
 const Integrations = lazy(() => import("@/pages/integrations"));
+const GrowYourBusiness = lazy(() => import("@/pages/grow-your-business"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 
 function LoadingFallback() {
@@ -129,6 +130,7 @@ function AppRoutes() {
       <Route path="/admin/messages" component={() => <PrivateRoute><AdminMessages /></PrivateRoute>} />
       <Route path="/admin/backend" component={() => <PrivateRoute><AdminBackend /></PrivateRoute>} />
       <Route path="/integrations" component={() => <PrivateRoute><Integrations /></PrivateRoute>} />
+      <Route path="/grow-your-business" component={() => <PrivateRoute><GrowYourBusiness /></PrivateRoute>} />
 
       <Route path="/" component={Landing} />
 
