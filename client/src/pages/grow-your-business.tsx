@@ -195,14 +195,14 @@ export default function GrowYourBusiness() {
                                 <Button
                                     size="lg"
                                     className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white px-8 py-6 text-lg font-bold rounded-xl shadow-2xl shadow-violet-600/30 transition-all hover:shadow-violet-600/50 hover:scale-105"
-                                    onClick={() => window.open('https://app.gorocket.uk', '_blank')}
+                                    onClick={() => window.open('https://6b3092ec-5368-47f0-841d-14010659408f-00-3giq3skph5fsj.sisko.replit.dev/dashboard', '_blank')}
                                 >
                                     <Rocket className="w-5 h-5 mr-2" />
-                                    Apply for Free Trial
+                                    Start Your Free Trial
                                     <ArrowRight className="w-5 h-5 ml-2" />
                                 </Button>
                                 <p className="text-sm text-gray-500">
-                                    No credit card required • 14-day free trial
+                                    28 days free • Then just <span className="text-green-400 font-semibold">£37/mo</span> <span className="line-through text-gray-600">£97/mo</span>
                                 </p>
                             </motion.div>
 
@@ -336,8 +336,8 @@ export default function GrowYourBusiness() {
                                 {[
                                     {
                                         step: "01",
-                                        title: "Apply for Your Free Trial",
-                                        description: "Click the button below to apply. We'll review your application and get you set up within 24 hours. No credit card needed.",
+                                        title: "Start Your Free Trial",
+                                        description: "Click the button below to activate your 28-day free trial instantly. After your trial, continue for just £37/month (normally £97).",
                                         icon: Rocket,
                                     },
                                     {
@@ -442,29 +442,30 @@ export default function GrowYourBusiness() {
                             </motion.h2>
 
                             <motion.p variants={fadeIn} className="text-gray-400 text-lg mb-8 max-w-xl mx-auto">
-                                Apply for your free 14-day trial today. No credit card, no commitment.
-                                Just powerful tools that help you grow.
+                                Start your <span className="text-white font-semibold">28-day free trial</span> today. Then just{" "}
+                                <span className="text-green-400 font-bold">£37/month</span>{" "}
+                                <span className="line-through text-gray-600">£97/month</span>. Cancel anytime.
                             </motion.p>
 
                             <motion.div variants={fadeIn} className="flex flex-col items-center gap-4">
                                 <Button
                                     size="lg"
                                     className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white px-10 py-7 text-xl font-bold rounded-2xl shadow-2xl shadow-violet-600/30 transition-all hover:shadow-violet-600/50 hover:scale-105"
-                                    onClick={() => window.open('https://app.gorocket.uk', '_blank')}
+                                    onClick={() => window.open('https://6b3092ec-5368-47f0-841d-14010659408f-00-3giq3skph5fsj.sisko.replit.dev/dashboard', '_blank')}
                                 >
                                     <Rocket className="w-6 h-6 mr-3" />
-                                    Apply for Free Trial
+                                    Start Your Free Trial
                                     <ExternalLink className="w-5 h-5 ml-3" />
                                 </Button>
 
                                 <div className="flex items-center gap-6 mt-4 text-sm text-gray-500">
                                     <span className="flex items-center gap-1.5">
                                         <CheckCircle2 className="w-4 h-4 text-green-500" />
-                                        Free 14-day trial
+                                        28 days free
                                     </span>
                                     <span className="flex items-center gap-1.5">
                                         <CheckCircle2 className="w-4 h-4 text-green-500" />
-                                        No credit card
+                                        Then £37/mo (62% off)
                                     </span>
                                     <span className="flex items-center gap-1.5">
                                         <CheckCircle2 className="w-4 h-4 text-green-500" />
