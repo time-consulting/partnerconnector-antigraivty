@@ -13,9 +13,9 @@
 // ============================================================
 // 🔄 UPDATE THESE ON EVERY PUSH
 // ============================================================
-const BUILD_VERSION = "v1.0.3";
-const BUILD_CHANGES = "Consolidated product types: Business Automation, Marketing, Bookings";
-const BUILD_TIMESTAMP = "2026-02-16 17:46";
+const BUILD_VERSION = "v1.1.0";
+const BUILD_CHANGES = "Mobile optimization: hamburger sidebar, responsive margins, table scroll";
+const BUILD_TIMESTAMP = "2026-02-16 20:14";
 // ============================================================
 
 export default function DevVersionBanner() {

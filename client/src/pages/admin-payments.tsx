@@ -32,10 +32,6 @@ export default function AdminPaymentsPage() {
       <Sidebar onExpandChange={setSidebarExpanded} />
       <div className={`transition-all duration-300 ml-0 ${sidebarExpanded ? 'md:ml-64' : 'md:ml-20'}`}>
         <div className="p-6 lg:p-8">
-          {/* VERIFICATION BANNER - REMOVE AFTER CONFIRMED */}
-          <div className="mb-4 p-4 bg-red-600 text-white text-center text-2xl font-bold rounded-lg">
-            PAYMENTS PAGE v2 – Jan 26, 2026 09:45 AM - THIS IS THE CORRECT FILE
-          </div>
 
           <div className="mb-8">
             <Button
