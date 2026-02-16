@@ -195,7 +195,7 @@ export default function GrowYourBusiness() {
                                 <Button
                                     size="lg"
                                     className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white px-8 py-6 text-lg font-bold rounded-xl shadow-2xl shadow-violet-600/30 transition-all hover:shadow-violet-600/50 hover:scale-105"
-                                    onClick={() => window.open('https://6b3092ec-5368-47f0-841d-14010659408f-00-3giq3skph5fsj.sisko.replit.dev/dashboard', '_blank')}
+                                    onClick={() => window.location.href = 'https://6b3092ec-5368-47f0-841d-14010659408f-00-3giq3skph5fsj.sisko.replit.dev/dashboard'}
                                 >
                                     <Rocket className="w-5 h-5 mr-2" />
                                     Start Your Free Trial
@@ -451,7 +451,7 @@ export default function GrowYourBusiness() {
                                 <Button
                                     size="lg"
                                     className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white px-10 py-7 text-xl font-bold rounded-2xl shadow-2xl shadow-violet-600/30 transition-all hover:shadow-violet-600/50 hover:scale-105"
-                                    onClick={() => window.open('https://6b3092ec-5368-47f0-841d-14010659408f-00-3giq3skph5fsj.sisko.replit.dev/dashboard', '_blank')}
+                                    onClick={() => window.location.href = 'https://6b3092ec-5368-47f0-841d-14010659408f-00-3giq3skph5fsj.sisko.replit.dev/dashboard'}
                                 >
                                     <Rocket className="w-6 h-6 mr-3" />
                                     Start Your Free Trial
