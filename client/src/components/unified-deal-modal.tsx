@@ -1186,15 +1186,85 @@ export default function UnifiedDealModal({ isOpen, onClose, deal, viewMode = 'pa
             </div>
           )}
 
-          {deal.adminNotes && (
-            <div className="bg-amber-900/20 rounded-2xl p-6 border border-amber-600/50">
-              <h4 className="font-semibold text-amber-400 mb-2 flex items-center gap-2">
-                <FileCheck className="h-5 w-5" />
-                Progress Log
-              </h4>
-              <p className="text-gray-300 whitespace-pre-line">{deal.adminNotes}</p>
-            </div>
-          )}
+          {deal.adminNotes && (() => {
+            // Parse adminNotes into structured timeline entries
+            const rawLines = deal.adminNotes.split('\n').filter((line: string) => line.trim().length > 3);
+
+            const entries = rawLines.map((line: string) => {
+              const trimmed = line.trim();
+
+              // Format 1: "Stage Label - HH:MM - MMM D, YYYY" (from admin pipeline)
+              const pipelineMatch = trimmed.match(/^(.+?)\s*-\s*(\d{1,2}:\d{2})\s*-\s*(.+)$/);
+              if (pipelineMatch) {
+                return { stage: pipelineMatch[1].trim(), time: pipelineMatch[2], date: pipelineMatch[3].trim() };
+              }
+
+              // Format 2: "[timestamp] Message" (older admin notes)
+              const bracketMatch = trimmed.match(/^\[(.+?)\]\s*(.+)$/);
+              if (bracketMatch) {
+                const timestamp = bracketMatch[1];
+                const message = bracketMatch[2].trim();
+                // Extract a clean stage name from the message
+                const stageName = message
+                  .replace(/^(Updated by admin\s+\S+)$/i, 'Updated')
+                  .replace(/\.\s*$/, '')
+                  .split('.')[0]
+                  .split(' - ')[0]
+                  .trim();
+                // Try to format the timestamp
+                try {
+                  const d = new Date(timestamp);
+                  if (!isNaN(d.getTime())) {
+                    const timeStr = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+                    const dateStr = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+                    return { stage: stageName, time: timeStr, date: dateStr };
+                  }
+                } catch { }
+                return { stage: stageName, time: '', date: timestamp };
+              }
+
+              // Skip lines that look like internal admin data (JSON, technical notes)
+              if (trimmed.startsWith('{') || trimmed.startsWith('"') || trimmed.length < 5) return null;
+
+              // Fallback: show as a simple entry
+              return { stage: trimmed, time: '', date: '' };
+            }).filter(Boolean).reverse(); // Reverse for most recent first
+
+            if (entries.length === 0) return null;
+
+            return (
+              <div className="bg-[#0d2137] rounded-2xl p-6 border border-[#1e3a5f]">
+                <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-white">
+                  <Clock className="h-5 w-5 text-teal-400" />
+                  Progress Updates
+                </h3>
+                <div className="space-y-0">
+                  {entries.map((entry: any, idx: number) => (
+                    <div key={idx} className="flex gap-3 relative">
+                      {/* Timeline connector */}
+                      <div className="flex flex-col items-center">
+                        <div className={`w-3 h-3 rounded-full mt-1.5 flex-shrink-0 ${idx === 0 ? 'bg-teal-400 ring-2 ring-teal-400/30' : 'bg-gray-600'}`} />
+                        {idx < entries.length - 1 && (
+                          <div className="w-0.5 flex-1 bg-[#1e3a5f] min-h-[24px]" />
+                        )}
+                      </div>
+                      {/* Entry content */}
+                      <div className="pb-4 min-w-0">
+                        <p className={`text-sm font-medium ${idx === 0 ? 'text-white' : 'text-gray-300'}`}>
+                          {entry.stage}
+                        </p>
+                        {(entry.time || entry.date) && (
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            {entry.time}{entry.time && entry.date ? ' · ' : ''}{entry.date}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
 
           <DocumentUploadSection dealId={deal.id} businessName={deal.businessName} />
 

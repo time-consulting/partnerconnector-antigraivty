@@ -1111,6 +1111,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // Auto-push consultation-type products to quote_sent (requires a scheduled call / demo)
+      const consultationProducts = ['ai_automation', 'epos', 'websites', 'restaurant_bookings', 'bookings'];
+      if (deal.productType && consultationProducts.includes(deal.productType) && !isAutoQuoteEligible) {
+        try {
+          const productLabel = {
+            ai_automation: 'AI Automation',
+            epos: 'EPOS',
+            websites: 'Website',
+            restaurant_bookings: 'Restaurant Booking',
+            bookings: 'Booking System',
+          }[deal.productType] || deal.productType;
+
+          const consultationNotes = `[${new Date().toLocaleString()}] ${productLabel} consultation request submitted. A call will be scheduled with the business to discuss requirements.`;
+
+          await storage.updateDeal(deal.id, {
+            dealStage: 'quote_sent',
+            adminNotes: consultationNotes,
+          });
+
+          deal.dealStage = 'quote_sent';
+
+          // Notify admins about the consultation request
+          const consultAdmins = await storage.getAdminUsers();
+          for (const admin of consultAdmins) {
+            await createNotificationForUser(admin.id, {
+              type: 'status_update',
+              title: `${productLabel} Consultation Request`,
+              message: `New ${productLabel} request from ${deal.businessName} (${deal.dealId}). Please schedule a consultation call.`,
+              dealId: deal.id,
+              businessName: deal.businessName,
+            });
+          }
+
+          // Notify the partner
+          await createNotificationForUser(userId, {
+            type: 'status_update',
+            title: `${productLabel} Request Received`,
+            message: `Your ${productLabel.toLowerCase()} request for ${deal.businessName} has been received. We will contact the business to schedule a call and discuss requirements. No further action needed from you at this stage.`,
+            dealId: deal.id,
+            businessName: deal.businessName,
+          });
+
+          console.log(`Consultation auto-push for ${deal.productType} deal: ${deal.dealId}`);
+        } catch (consultError) {
+          console.error(`Consultation auto-push failed for deal ${deal.id}:`, consultError);
+        }
+      }
+
       console.log(`Deal created: ${deal.dealId} for ${deal.businessName}`);
       res.json(deal);
     } catch (error) {

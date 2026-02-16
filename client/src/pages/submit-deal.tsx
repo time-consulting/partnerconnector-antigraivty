@@ -246,6 +246,9 @@ export default function SubmitDeal() {
         'bookings': 'bookings',
         'websites': 'websites',
         'ai-marketing': 'ai_marketing',
+        'ai-automation': 'ai_automation',
+        'epos': 'epos',
+        'restaurant-booking': 'restaurant_bookings',
       };
       determinedProductType = serviceToProductType[selectedServices[0]] || 'card_payments';
     }

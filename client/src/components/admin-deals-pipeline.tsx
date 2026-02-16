@@ -406,24 +406,21 @@ export function AdminDealsPipeline() {
                                 <div className="flex items-center gap-2 mb-1 flex-wrap">
                                   <Building2 className="h-5 w-5 text-primary" />
                                   <h4 className="text-xl font-bold text-foreground">{deal.businessName}</h4>
-                                  <Badge
-                                    variant="secondary"
-                                    className={`
-                                      ${deal.productType === 'card_payments' ? 'bg-blue-500/20 text-blue-300 border-blue-500/50' : ''}
-                                      ${deal.productType === 'business_funding' ? 'bg-green-500/20 text-green-300 border-green-500/50' : ''}
-                                      ${deal.productType === 'utilities' ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50' : ''}
-                                      ${deal.productType === 'insurance' ? 'bg-purple-500/20 text-purple-300 border-purple-500/50' : ''}
-                                      ${deal.productType === 'custom' ? 'bg-gray-500/20 text-gray-300 border-gray-500/50' : ''}
-                                      ${!deal.productType ? 'bg-blue-500/20 text-blue-300 border-blue-500/50' : ''}
-                                    `}
-                                  >
-                                    {deal.productType === 'card_payments' && 'Card Payments'}
-                                    {deal.productType === 'business_funding' && 'Funding'}
-                                    {deal.productType === 'utilities' && 'Utilities'}
-                                    {deal.productType === 'insurance' && 'Insurance'}
-                                    {deal.productType === 'custom' && 'Custom'}
-                                    {!deal.productType && 'Card Payments'}
-                                  </Badge>
+                                  {(() => {
+                                    const pt = deal.productType as ProductType | undefined;
+                                    const config = pt ? PRODUCT_CONFIG[pt] : null;
+                                    const label = config?.label || 'Card Payments';
+                                    // Extract color name from the config text color class (e.g. 'text-blue-400' -> 'blue')
+                                    const colorName = config?.color?.match(/text-(\w+)-/)?.[1] || 'blue';
+                                    return (
+                                      <Badge
+                                        variant="secondary"
+                                        className={`bg-${colorName}-500/20 text-${colorName}-300 border-${colorName}-500/50`}
+                                      >
+                                        {label}
+                                      </Badge>
+                                    );
+                                  })()}
                                   {deal.quoteDeliveryMethod === 'email' && (
                                     <Badge variant="outline" className="bg-orange-500/20 text-orange-300 border-orange-500/50">
                                       Email Quote
