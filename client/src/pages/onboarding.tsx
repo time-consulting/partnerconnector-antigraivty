@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { CheckCircleIcon, UserIcon, BriefcaseIcon, UsersIcon } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useAuthContext } from "@/contexts/AuthContext";
 
 const onboardingSchema = z.object({
   firstName: z.string().min(2, "First name is required"),
@@ -41,6 +42,7 @@ type OnboardingFormData = z.infer<typeof onboardingSchema>;
 export default function OnboardingPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { user } = useAuthContext();
   const [step, setStep] = useState(1);
 
   const form = useForm<OnboardingFormData>({
@@ -54,6 +56,32 @@ export default function OnboardingPage() {
       phone: "",
     },
   });
+
+  // Pre-populate form fields from existing user data
+  useEffect(() => {
+    if (user) {
+      // If user already has completed onboarding, redirect to dashboard
+      if (user.hasCompletedOnboarding) {
+        setLocation("/dashboard");
+        return;
+      }
+
+      // Pre-fill any existing fields so users don't re-enter data
+      const existingData: Partial<OnboardingFormData> = {};
+      if (user.firstName) existingData.firstName = user.firstName;
+      if (user.lastName) existingData.lastName = user.lastName;
+      if (user.phone) existingData.phone = user.phone;
+      if (user.profession) existingData.profession = user.profession;
+      if (user.company) existingData.company = user.company;
+      if (user.clientBaseSize) existingData.clientBaseSize = user.clientBaseSize;
+
+      if (Object.keys(existingData).length > 0) {
+        Object.entries(existingData).forEach(([key, value]) => {
+          form.setValue(key as keyof OnboardingFormData, value);
+        });
+      }
+    }
+  }, [user, setLocation, form]);
 
   const completeMutation = useMutation({
     mutationFn: async (data: OnboardingFormData) => {
@@ -79,10 +107,6 @@ export default function OnboardingPage() {
   const onSubmit = (data: OnboardingFormData) => {
     completeMutation.mutate(data);
   };
-
-  const { data: user } = useQuery({
-    queryKey: ["/api/auth/user"],
-  });
 
   const steps = [
     {
@@ -129,13 +153,12 @@ export default function OnboardingPage() {
             {steps.map((s, index) => (
               <div key={s.number} className="flex items-center">
                 <div
-                  className={`flex items-center justify-center w-10 h-10 rounded-full border-2 transition-colors ${
-                    step > s.number
-                      ? "bg-green-500 border-green-500 text-white"
-                      : step === s.number
+                  className={`flex items-center justify-center w-10 h-10 rounded-full border-2 transition-colors ${step > s.number
+                    ? "bg-green-500 border-green-500 text-white"
+                    : step === s.number
                       ? "bg-teal-500 border-teal-500 text-white"
                       : "bg-white border-gray-300 text-gray-500 dark:bg-gray-800 dark:border-gray-600"
-                  }`}
+                    }`}
                 >
                   {step > s.number ? (
                     <CheckCircleIcon className="w-6 h-6" />
@@ -145,9 +168,8 @@ export default function OnboardingPage() {
                 </div>
                 {index < steps.length - 1 && (
                   <div
-                    className={`w-16 h-0.5 mx-2 ${
-                      step > s.number ? "bg-green-500" : "bg-gray-300 dark:bg-gray-600"
-                    }`}
+                    className={`w-16 h-0.5 mx-2 ${step > s.number ? "bg-green-500" : "bg-gray-300 dark:bg-gray-600"
+                      }`}
                   />
                 )}
               </div>

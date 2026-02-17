@@ -30,20 +30,20 @@ app.use(compression({
     if (req.headers['x-no-compression']) {
       return false;
     }
-    
+
     // Only compress if content type indicates text-based content
     const contentType = res.getHeader('content-type') as string;
     if (contentType) {
       // Skip already compressed formats
-      if (contentType.includes('image/') || 
-          contentType.includes('video/') ||
-          contentType.includes('audio/') ||
-          contentType.includes('application/pdf') ||
-          contentType.includes('application/zip')) {
+      if (contentType.includes('image/') ||
+        contentType.includes('video/') ||
+        contentType.includes('audio/') ||
+        contentType.includes('application/pdf') ||
+        contentType.includes('application/zip')) {
         return false;
       }
     }
-    
+
     // Use compression for text-based content
     return compression.filter(req, res);
   }
@@ -52,22 +52,7 @@ app.use(compression({
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// --- ADD THIS BLOCK HERE ---
-import session from "express-session";
-
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET || "fallback-secret",
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: false,          // behind Railway HTTPS
-      sameSite: "lax",
-      maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
-    }
-  })
-);
-// --- END OF BLOCK ---
+// Session middleware is configured in auth.ts via setupAuth() — do not add a second one here
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -113,7 +98,7 @@ app.use((req, res, next) => {
     if (!res.headersSent) {
       res.status(status).json({ message });
     }
-    
+
     // Log the error but don't throw it again to prevent headers conflict
     console.error('Application error:', err);
   });
@@ -123,12 +108,12 @@ app.use((req, res, next) => {
     const url = req.url;
     const ext = url.split('.').pop()?.toLowerCase();
     const filename = url.split('/').pop() || '';
-    
+
     // Only apply to static assets (not API routes)
     if (!url.startsWith('/api')) {
       // Check if file has hash in name (typical Vite pattern: filename-hash.ext)
       const hasHash = /\.[a-f0-9]{8,}\./i.test(filename) || /\-[a-f0-9]{8,}\./i.test(filename);
-      
+
       if (hasHash) {
         // Hashed assets - can be cached for 1 year since content changes = new hash
         res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
@@ -149,7 +134,7 @@ app.use((req, res, next) => {
         res.setHeader('Cache-Control', 'public, max-age=86400'); // 1 day
       }
     }
-    
+
     next();
   });
 

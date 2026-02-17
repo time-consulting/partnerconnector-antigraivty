@@ -116,6 +116,64 @@ export default function Dashboard() {
             <p className="text-gray-500">Manage your referrals and track your commissions</p>
           </div>
 
+          {/* Email Verification Banner */}
+          {user && user.emailVerified === false && (
+            <div
+              className="mb-6 p-4 rounded-xl flex items-center justify-between gap-4"
+              style={{ backgroundColor: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.3)' }}
+              data-testid="banner-verify-email"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(251,191,36,0.2)' }}>
+                  <MessageSquare className="w-5 h-5 text-yellow-400" />
+                </div>
+                <div>
+                  <p className="text-white font-medium text-sm">Verify your email to unlock all features</p>
+                  <p className="text-gray-400 text-xs mt-0.5">Check your inbox for a verification link, or request a new one</p>
+                </div>
+              </div>
+              <Link href="/resend-verification">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-yellow-400 border-yellow-400/30 hover:bg-yellow-400/10 whitespace-nowrap"
+                  data-testid="button-resend-verify"
+                >
+                  Resend Email
+                </Button>
+              </Link>
+            </div>
+          )}
+
+          {/* Profile Completion Banner */}
+          {user && !user.hasCompletedOnboarding && (
+            <div
+              className="mb-6 p-4 rounded-xl flex items-center justify-between gap-4"
+              style={{ backgroundColor: 'rgba(0,212,170,0.08)', border: '1px solid rgba(0,212,170,0.25)' }}
+              data-testid="banner-complete-profile"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(0,212,170,0.2)' }}>
+                  <UserPlus className="w-5 h-5 text-[#00d4aa]" />
+                </div>
+                <div>
+                  <p className="text-white font-medium text-sm">Complete your profile to get the most out of PartnerConnector</p>
+                  <p className="text-gray-400 text-xs mt-0.5">Takes less than 2 minutes — helps us match you with the right opportunities</p>
+                </div>
+              </div>
+              <Link href="/onboarding">
+                <Button
+                  size="sm"
+                  className="whitespace-nowrap"
+                  style={{ backgroundColor: '#00d4aa', color: '#0a1014' }}
+                  data-testid="button-complete-profile"
+                >
+                  Complete Profile
+                </Button>
+              </Link>
+            </div>
+          )}
+
           {/* Stats Overview Row */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             <div className="rocket-card p-5" data-testid="card-deals-submitted">

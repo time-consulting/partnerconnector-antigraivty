@@ -250,6 +250,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Custom auth routes
   const { z } = await import('zod');
 
+  // Store referral code in session (for OAuth flow — survives redirect)
+  app.post('/api/auth/store-referral', async (req: any, res) => {
+    try {
+      const { code } = req.body;
+      if (code && typeof code === 'string') {
+        req.session.referralCode = code.toUpperCase();
+        console.log('[AUTH] Stored referral code in session:', req.session.referralCode);
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error('[AUTH] Error storing referral code:', error);
+      res.status(500).json({ message: 'Failed to store referral code' });
+    }
+  });
+
   // Register endpoint
   app.post('/api/auth/register', async (req: any, res) => {
     try {
@@ -259,18 +274,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
         firstName: z.string().optional(),
         lastName: z.string().optional(),
         referralCode: z.string().optional(),
+        // Additional profile fields from signup form
+        phone: z.string().optional(),
+        profession: z.string().optional(),
+        experience: z.string().optional(),
+        currentRole: z.string().optional(),
+        companyName: z.string().optional(),
+        networkSize: z.string().optional(),
+        dealsExperience: z.string().optional(),
+        monthlyEarningsGoal: z.string().optional(),
+        timeCommitment: z.string().optional(),
+        primaryInterest: z.array(z.string()).optional(),
+        onboardingCompleted: z.boolean().optional(),
       });
 
       const data = schema.parse(req.body);
-      const { email, password, firstName, lastName, referralCode } = data;
+      const { email, password, referralCode, ...profileFields } = data;
 
       console.log('[AUTH] Registration attempt:', email);
+
+      // Map signup field names to DB column names
+      const userData: Record<string, any> = {
+        firstName: profileFields.firstName,
+        lastName: profileFields.lastName,
+        phone: profileFields.phone,
+        profession: profileFields.profession,
+        company: profileFields.companyName,
+        clientBaseSize: profileFields.networkSize,
+      };
+
+      // Mark onboarding as complete if we have the required profile fields
+      const hasRequiredProfile = !!(profileFields.firstName && profileFields.lastName && profileFields.phone && profileFields.profession);
+      if (hasRequiredProfile || profileFields.onboardingCompleted) {
+        userData.hasCompletedOnboarding = true;
+        console.log('[AUTH] Profile complete — marking onboarding as done');
+      }
+
+      // Remove undefined values so they don't overwrite defaults
+      Object.keys(userData).forEach(key => {
+        if (userData[key] === undefined) delete userData[key];
+      });
 
       // Create user with credentials
       const user = await storage.createUserWithCredentials(
         email,
         password,
-        { firstName, lastName },
+        userData,
         referralCode || req.session.referralCode
       );
 

@@ -3,53 +3,38 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import {
   ArrowRightIcon,
   ArrowLeftIcon,
   CheckIcon,
   UserIcon,
-  BriefcaseIcon,
-  UsersIcon,
-  TargetIcon,
   LockIcon,
   Loader2,
   Eye,
   EyeOff,
-  StarIcon
+  StarIcon,
+  Sparkles,
+  Shield,
+  TrendingUp
 } from "lucide-react";
 import { Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 
-interface OnboardingData {
+interface SignupData {
   email: string;
   firstName: string;
   lastName: string;
   phone: string;
-  profession: string;
-  experience: string;
-  currentRole: string;
-  companyName: string;
-  networkSize: string;
-  dealsExperience: string;
-  monthlyEarningsGoal: string;
-  timeCommitment: string;
-  primaryInterest: string[];
   password: string;
   confirmPassword: string;
   referralCode: string;
 }
 
 const steps = [
-  { id: 'email', title: 'Get Started', icon: StarIcon, description: 'Enter your email to begin' },
-  { id: 'name', title: 'Your Name', icon: UserIcon, description: 'Tell us who you are' },
-  { id: 'professional', title: 'Your Background', icon: BriefcaseIcon, description: 'Professional experience' },
-  { id: 'network', title: 'Your Network', icon: UsersIcon, description: 'About your connections' },
-  { id: 'goals', title: 'Your Goals', icon: TargetIcon, description: 'What you want to achieve' },
+  { id: 'details', title: 'Your Details', icon: UserIcon, description: 'Tell us who you are' },
   { id: 'password', title: 'Secure Account', icon: LockIcon, description: 'Create your login' },
 ];
 
@@ -61,21 +46,12 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  
-  const [formData, setFormData] = useState<OnboardingData>({
+
+  const [formData, setFormData] = useState<SignupData>({
     email: '',
     firstName: '',
     lastName: '',
     phone: '',
-    profession: '',
-    experience: '',
-    currentRole: '',
-    companyName: '',
-    networkSize: '',
-    dealsExperience: '',
-    monthlyEarningsGoal: '',
-    timeCommitment: '',
-    primaryInterest: [],
     password: '',
     confirmPassword: '',
     referralCode: '',
@@ -86,39 +62,29 @@ export default function SignupPage() {
     const emailParam = params.get('email');
     const nameParam = params.get('name');
     const refCode = params.get('ref');
-    
+
     if (emailParam) {
       setFormData(prev => ({ ...prev, email: emailParam }));
       if (nameParam) {
         const nameParts = nameParam.split(' ');
-        setFormData(prev => ({ 
-          ...prev, 
+        setFormData(prev => ({
+          ...prev,
           firstName: nameParts[0] || '',
           lastName: nameParts.slice(1).join(' ') || ''
         }));
-        setCurrentStep(2);
-      } else {
-        setCurrentStep(1);
       }
     }
-    
+
     if (refCode) {
       setFormData(prev => ({ ...prev, referralCode: refCode.toUpperCase() }));
+      // Persist referral code in localStorage for OAuth recovery
+      localStorage.setItem('pendingReferralCode', refCode.toUpperCase());
     }
   }, []);
 
-  const updateFormData = (field: keyof OnboardingData, value: any) => {
+  const updateFormData = (field: keyof SignupData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     setErrorMessage(null);
-  };
-
-  const handleArrayUpdate = (field: keyof OnboardingData, value: string, checked: boolean) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: checked 
-        ? [...(prev[field] as string[]), value]
-        : (prev[field] as string[]).filter(item => item !== value)
-    }));
   };
 
   const validateStep = () => {
@@ -128,34 +94,18 @@ export default function SignupPage() {
           toast({ title: "Please enter a valid email address", variant: "destructive" });
           return false;
         }
-        break;
-      case 1:
         if (!formData.firstName || !formData.lastName) {
           toast({ title: "Please enter your full name", variant: "destructive" });
           return false;
         }
         break;
-      case 2:
-        if (!formData.profession || !formData.experience) {
-          toast({ title: "Please complete your professional background", variant: "destructive" });
-          return false;
-        }
-        break;
-      case 3:
-        if (!formData.networkSize) {
-          toast({ title: "Please tell us about your network", variant: "destructive" });
-          return false;
-        }
-        break;
-      case 4:
-        if (!formData.monthlyEarningsGoal || formData.primaryInterest.length === 0) {
-          toast({ title: "Please complete your goals", variant: "destructive" });
-          return false;
-        }
-        break;
-      case 5:
+      case 1:
         if (!formData.password || formData.password.length < 8) {
           toast({ title: "Password must be at least 8 characters", variant: "destructive" });
+          return false;
+        }
+        if (!/(?=.*[A-Za-z])(?=.*\d)/.test(formData.password)) {
+          toast({ title: "Password must contain at least one letter and one number", variant: "destructive" });
           return false;
         }
         if (formData.password !== formData.confirmPassword) {
@@ -169,7 +119,7 @@ export default function SignupPage() {
 
   const handleNext = () => {
     if (!validateStep()) return;
-    
+
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
@@ -183,34 +133,35 @@ export default function SignupPage() {
     }
   };
 
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleNext();
+    }
+  };
+
   const handleSubmit = async () => {
     setIsLoading(true);
     setErrorMessage(null);
-    
+
     try {
       const payload = {
         email: formData.email,
         password: formData.password,
         firstName: formData.firstName,
         lastName: formData.lastName,
-        phone: formData.phone,
-        profession: formData.profession,
-        experience: formData.experience,
-        currentRole: formData.currentRole,
-        companyName: formData.companyName,
-        networkSize: formData.networkSize,
-        dealsExperience: formData.dealsExperience,
-        monthlyEarningsGoal: formData.monthlyEarningsGoal,
-        timeCommitment: formData.timeCommitment,
-        primaryInterest: formData.primaryInterest,
+        phone: formData.phone || undefined,
         referralCode: formData.referralCode || undefined,
-        onboardingCompleted: true,
+        onboardingCompleted: false, // Will complete profile later in-app
       };
 
       const response = await apiRequest('POST', '/api/auth/register', payload);
       const result = await response.json();
 
       if (result.success) {
+        // Clear persisted referral code
+        localStorage.removeItem('pendingReferralCode');
+
         toast({
           title: "Welcome to PartnerConnector! 🎉",
           description: "Your account has been created. Let's get you started!",
@@ -231,17 +182,29 @@ export default function SignupPage() {
   };
 
   const progress = ((currentStep + 1) / steps.length) * 100;
-  const CurrentIcon = steps[currentStep].icon;
 
   const renderStepContent = () => {
     switch (currentStep) {
       case 0:
         return (
-          <div className="space-y-6">
+          <div className="space-y-6" onKeyDown={handleKeyPress}>
             <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-white mb-3">Let's Get Started</h2>
-              <p className="text-gray-400">Enter your email to begin your partner journey</p>
+              <h2 className="text-3xl font-bold text-white mb-3">Join PartnerConnector</h2>
+              <p className="text-gray-400">Create your account in under 60 seconds</p>
             </div>
+
+            {formData.referralCode && (
+              <div className="p-4 rounded-xl" style={{ backgroundColor: 'rgba(0,212,170,0.1)', border: '1px solid rgba(0,212,170,0.3)' }}>
+                <div className="flex items-center gap-3">
+                  <Sparkles className="w-5 h-5" style={{ color: '#00d4aa' }} />
+                  <div>
+                    <p className="text-sm text-gray-400">Joining with referral code</p>
+                    <p className="text-lg font-bold font-mono" style={{ color: '#00d4aa' }}>{formData.referralCode}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div>
               <Label className="text-gray-300">Email Address</Label>
               <Input
@@ -253,22 +216,7 @@ export default function SignupPage() {
                 autoFocus
               />
             </div>
-            {formData.referralCode && (
-              <div className="p-4 rounded-xl" style={{ backgroundColor: 'rgba(0,212,170,0.1)', border: '1px solid rgba(0,212,170,0.3)' }}>
-                <p className="text-sm text-gray-400 mb-1">Joining with referral code</p>
-                <p className="text-xl font-bold font-mono" style={{ color: '#00d4aa' }}>{formData.referralCode}</p>
-              </div>
-            )}
-          </div>
-        );
 
-      case 1:
-        return (
-          <div className="space-y-6">
-            <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-white mb-3">What's Your Name?</h2>
-              <p className="text-gray-400">We'd love to know who we're working with</p>
-            </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label className="text-gray-300">First Name</Label>
@@ -277,7 +225,6 @@ export default function SignupPage() {
                   value={formData.firstName}
                   onChange={(e) => updateFormData('firstName', e.target.value)}
                   className="mt-2 h-14 bg-white/5 border-white/10 text-white placeholder:text-gray-500 text-lg"
-                  autoFocus
                 />
               </div>
               <div>
@@ -290,8 +237,9 @@ export default function SignupPage() {
                 />
               </div>
             </div>
+
             <div>
-              <Label className="text-gray-300">Phone Number (Optional)</Label>
+              <Label className="text-gray-300">Phone Number <span className="text-gray-500">(optional)</span></Label>
               <Input
                 type="tel"
                 placeholder="+44 7XXX XXX XXX"
@@ -303,162 +251,20 @@ export default function SignupPage() {
           </div>
         );
 
-      case 2:
+      case 1:
         return (
-          <div className="space-y-6">
-            <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-white mb-3">Your Background</h2>
-              <p className="text-gray-400">Tell us about your professional experience</p>
-            </div>
-            <div>
-              <Label className="text-gray-300">What's your profession?</Label>
-              <Select value={formData.profession} onValueChange={(v) => updateFormData('profession', v)}>
-                <SelectTrigger className="mt-2 h-14 bg-white/5 border-white/10 text-white">
-                  <SelectValue placeholder="Select your profession" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="accountant">Accountant</SelectItem>
-                  <SelectItem value="business-consultant">Business Consultant</SelectItem>
-                  <SelectItem value="financial-advisor">Financial Advisor</SelectItem>
-                  <SelectItem value="mortgage-broker">Mortgage Broker</SelectItem>
-                  <SelectItem value="insurance-broker">Insurance Broker</SelectItem>
-                  <SelectItem value="business-coach">Business Coach</SelectItem>
-                  <SelectItem value="sales-professional">Sales Professional</SelectItem>
-                  <SelectItem value="business-owner">Business Owner</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-gray-300">Years of experience</Label>
-              <Select value={formData.experience} onValueChange={(v) => updateFormData('experience', v)}>
-                <SelectTrigger className="mt-2 h-14 bg-white/5 border-white/10 text-white">
-                  <SelectValue placeholder="Select experience level" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0-2">0-2 years</SelectItem>
-                  <SelectItem value="3-5">3-5 years</SelectItem>
-                  <SelectItem value="6-10">6-10 years</SelectItem>
-                  <SelectItem value="11-15">11-15 years</SelectItem>
-                  <SelectItem value="16+">16+ years</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-gray-300">Company Name (Optional)</Label>
-              <Input
-                placeholder="Your company"
-                value={formData.companyName}
-                onChange={(e) => updateFormData('companyName', e.target.value)}
-                className="mt-2 h-14 bg-white/5 border-white/10 text-white placeholder:text-gray-500"
-              />
-            </div>
-          </div>
-        );
-
-      case 3:
-        return (
-          <div className="space-y-6">
-            <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-white mb-3">Your Network</h2>
-              <p className="text-gray-400">Help us understand your business connections</p>
-            </div>
-            <div>
-              <Label className="text-gray-300">How many business contacts do you have?</Label>
-              <Select value={formData.networkSize} onValueChange={(v) => updateFormData('networkSize', v)}>
-                <SelectTrigger className="mt-2 h-14 bg-white/5 border-white/10 text-white">
-                  <SelectValue placeholder="Select network size" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1-10">1-10 contacts</SelectItem>
-                  <SelectItem value="11-50">11-50 contacts</SelectItem>
-                  <SelectItem value="51-100">51-100 contacts</SelectItem>
-                  <SelectItem value="100+">100+ contacts</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-gray-300">Experience with business referrals?</Label>
-              <Select value={formData.dealsExperience} onValueChange={(v) => updateFormData('dealsExperience', v)}>
-                <SelectTrigger className="mt-2 h-14 bg-white/5 border-white/10 text-white">
-                  <SelectValue placeholder="Select experience" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No previous experience</SelectItem>
-                  <SelectItem value="some">Made a few referrals</SelectItem>
-                  <SelectItem value="regular">Regular referral activity</SelectItem>
-                  <SelectItem value="expert">Referrals are core to my business</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        );
-
-      case 4:
-        return (
-          <div className="space-y-6">
-            <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-white mb-3">Your Goals</h2>
-              <p className="text-gray-400">What do you want to achieve with us?</p>
-            </div>
-            <div>
-              <Label className="text-gray-300">Monthly earnings goal</Label>
-              <Select value={formData.monthlyEarningsGoal} onValueChange={(v) => updateFormData('monthlyEarningsGoal', v)}>
-                <SelectTrigger className="mt-2 h-14 bg-white/5 border-white/10 text-white">
-                  <SelectValue placeholder="Select your goal" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="500-1000">£500 - £1,000</SelectItem>
-                  <SelectItem value="1000-2500">£1,000 - £2,500</SelectItem>
-                  <SelectItem value="2500-5000">£2,500 - £5,000</SelectItem>
-                  <SelectItem value="5000+">£5,000+</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-gray-300 mb-4 block">What interests you most? (Select all that apply)</Label>
-              <div className="grid grid-cols-1 gap-3">
-                {[
-                  { value: 'commissions', label: 'Earning commissions on referrals' },
-                  { value: 'team', label: 'Building a team of partners' },
-                  { value: 'clients', label: 'Helping clients access funding' },
-                  { value: 'passive', label: 'Creating passive income' },
-                ].map((item) => (
-                  <label
-                    key={item.value}
-                    className="flex items-center gap-3 p-4 rounded-xl cursor-pointer transition-all"
-                    style={{
-                      backgroundColor: formData.primaryInterest.includes(item.value) ? 'rgba(0,212,170,0.15)' : 'rgba(255,255,255,0.03)',
-                      border: formData.primaryInterest.includes(item.value) ? '1px solid rgba(0,212,170,0.5)' : '1px solid rgba(255,255,255,0.08)'
-                    }}
-                  >
-                    <Checkbox
-                      checked={formData.primaryInterest.includes(item.value)}
-                      onCheckedChange={(checked) => handleArrayUpdate('primaryInterest', item.value, checked as boolean)}
-                      className="border-white/30 data-[state=checked]:bg-[#00d4aa] data-[state=checked]:border-[#00d4aa]"
-                    />
-                    <span className="text-white">{item.label}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          </div>
-        );
-
-      case 5:
-        return (
-          <div className="space-y-6">
+          <div className="space-y-6" onKeyDown={handleKeyPress}>
             <div className="text-center mb-8">
               <h2 className="text-3xl font-bold text-white mb-3">Secure Your Account</h2>
               <p className="text-gray-400">Create a password to protect your account</p>
             </div>
-            
+
             {errorMessage && (
               <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30">
                 <p className="text-red-400 text-sm">{errorMessage}</p>
               </div>
             )}
-            
+
             <div>
               <Label className="text-gray-300">Password</Label>
               <div className="relative mt-2">
@@ -477,7 +283,7 @@ export default function SignupPage() {
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
-              <p className="text-xs text-gray-500 mt-2">Must be at least 8 characters</p>
+              <p className="text-xs text-gray-500 mt-2">At least 8 characters with a letter and number</p>
             </div>
             <div>
               <Label className="text-gray-300">Confirm Password</Label>
@@ -499,14 +305,22 @@ export default function SignupPage() {
               </div>
             </div>
 
-            <div className="p-4 rounded-xl" style={{ backgroundColor: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)' }}>
-              <div className="flex items-start gap-3">
-                <CheckIcon className="w-5 h-5 text-green-500 mt-0.5" />
-                <div>
-                  <p className="text-white font-medium text-sm">Ready to start earning</p>
-                  <p className="text-gray-400 text-xs mt-1">Click below to create your account and access your dashboard</p>
+            {/* Trust signals */}
+            <div className="grid grid-cols-3 gap-3 pt-2">
+              {[
+                { icon: Shield, label: 'Secure & encrypted' },
+                { icon: TrendingUp, label: 'Start earning today' },
+                { icon: Sparkles, label: 'Free to join' },
+              ].map((item) => (
+                <div
+                  key={item.label}
+                  className="flex flex-col items-center gap-2 p-3 rounded-xl text-center"
+                  style={{ backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+                >
+                  <item.icon className="w-4 h-4 text-[#00d4aa]" />
+                  <span className="text-xs text-gray-400 leading-tight">{item.label}</span>
                 </div>
-              </div>
+              ))}
             </div>
           </div>
         );
@@ -538,15 +352,14 @@ export default function SignupPage() {
       <div className="pt-24 pb-12 px-4">
         <div className="max-w-xl mx-auto">
           <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-center gap-4 mb-4">
               {steps.map((step, i) => (
                 <div key={step.id} className="flex items-center">
                   <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-                      i <= currentStep 
-                        ? 'bg-[#00d4aa] text-[#0a1014]' 
+                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${i <= currentStep
+                        ? 'bg-[#00d4aa] text-[#0a1014]'
                         : 'bg-white/10 text-gray-500'
-                    }`}
+                      }`}
                   >
                     {i < currentStep ? (
                       <CheckIcon className="w-5 h-5" />
@@ -555,8 +368,8 @@ export default function SignupPage() {
                     )}
                   </div>
                   {i < steps.length - 1 && (
-                    <div 
-                      className="w-8 sm:w-12 h-0.5 mx-1"
+                    <div
+                      className="w-16 sm:w-24 h-0.5 mx-2"
                       style={{ backgroundColor: i < currentStep ? '#00d4aa' : 'rgba(255,255,255,0.1)' }}
                     />
                   )}
@@ -566,11 +379,11 @@ export default function SignupPage() {
             <Progress value={progress} className="h-1 bg-white/10" />
           </div>
 
-          <div 
+          <div
             className="rounded-2xl p-8"
-            style={{ 
-              backgroundColor: 'rgba(255,255,255,0.03)', 
-              border: '1px solid rgba(255,255,255,0.08)' 
+            style={{
+              backgroundColor: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(255,255,255,0.08)'
             }}
           >
             <AnimatePresence mode="wait">
@@ -595,7 +408,7 @@ export default function SignupPage() {
                 <ArrowLeftIcon className="w-4 h-4 mr-2" />
                 Back
               </Button>
-              
+
               <Button
                 onClick={handleNext}
                 disabled={isLoading}

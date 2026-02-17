@@ -8,6 +8,7 @@ interface User {
   firstName?: string;
   lastName?: string;
   profileImageUrl?: string;
+  phone?: string;
   profession?: string;
   company?: string;
   clientBaseSize?: string;
@@ -17,6 +18,8 @@ interface User {
   teamRole?: string;
   isAdmin?: boolean;
   hasCompletedOnboarding?: boolean;
+  emailVerified?: boolean;
+  referralCode?: string;
   dealCode?: string;
 }
 
