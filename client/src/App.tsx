@@ -48,6 +48,7 @@ const ResendVerificationPage = lazy(() => import("@/pages/resend-verification"))
 const ForgotPasswordPage = lazy(() => import("@/pages/forgot-password"));
 const ResetPasswordPage = lazy(() => import("@/pages/reset-password"));
 const BookDemo = lazy(() => import("@/pages/book-demo"));
+const ForAccountants = lazy(() => import("@/pages/for-accountants"));
 const Integrations = lazy(() => import("@/pages/integrations"));
 const GrowYourBusiness = lazy(() => import("@/pages/grow-your-business"));
 const NotFound = lazy(() => import("@/pages/not-found"));
@@ -107,6 +108,8 @@ function AppRoutes() {
       <Route path="/help-center" component={HelpCenter} />
       <Route path="/partner-recruitment" component={PartnerRecruitment} />
       <Route path="/book-demo" component={BookDemo} />
+      {/* Public Pages */}
+      <Route path="/for-accountants" component={ForAccountants} />
 
       <Route path="/dashboard" component={() => <PrivateRoute><Dashboard /></PrivateRoute>} />
 
